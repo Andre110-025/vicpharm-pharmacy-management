@@ -1,0 +1,80 @@
+@import url(https://fonts.bunny.net/css?family=figtree:300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i);
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply scroll-smooth;
+  }
+
+  :disabled {
+    @apply opacity-55;
+  }
+
+  span,
+  p,
+  a {
+    @apply text-xs xs:text-sm;
+  }
+
+  h1 {
+    @apply text-xl font-semibold xs:text-2xl md:text-3xl lg:text-4xl;
+  }
+
+  h2 {
+    @apply text-xl font-semibold xs:text-2xl md:text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-base font-semibold xs:text-lg md:text-xl lg:text-2xl;
+  }
+
+  h4 {
+    @apply text-sm font-semibold xs:text-base md:text-lg lg:text-xl;
+  }
+
+  h5 {
+    @apply text-xs font-semibold xs:text-sm md:text-base lg:text-lg;
+  }
+
+  :disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  /* Input with type number */
+  /* input[type='number'] {
+    @apply text-right;
+  } */
+
+  button {
+    @apply rounded-md px-5 py-2.5 text-sm;
+  }
+
+  .mainBtn {
+    @apply bg-mainColor px-2.5 text-white;
+  }
+
+  .secondaryBtn {
+    @apply bg-white text-mainColor border border-mainColor;
+  }
+
+  .dashNav {
+    @apply block py-2.5 px-5 bg-transparent rounded-md text-gray-500 duration-75 select-none;
+  }
+
+  .dashNav.router-link-exact-active,
+  .dashNav:hover {
+    @apply bg-mainColor/5 text-mainColor;
+  }
+
+  .dashNav svg {
+    @apply inline-block mr-2.5 w-5 h-5 stroke-gray-500 duration-75;
+  }
+
+  .dashNav.router-link-exact-active svg,
+  .dashNav:hover svg {
+    @apply stroke-mainColor;
+  }
+}

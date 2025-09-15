@@ -1,0 +1,14 @@
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 14 14"
+    class="stroke-current"
+  >
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M.5 9.5h9a4 4 0 0 0 0-8h-3" />
+      <path d="m3.5 6.5l-3 3l3 3" />
+    </g>
+  </svg>
+</template>

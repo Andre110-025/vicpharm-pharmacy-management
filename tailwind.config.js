@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        mainColor: '#AF3585',
+        mainColor: '#05716c',
       },
       fontFamily: {
         sans: ['Figtree'],

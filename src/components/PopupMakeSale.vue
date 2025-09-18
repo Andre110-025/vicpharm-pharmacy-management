@@ -203,9 +203,9 @@ const completeSale = async () => {
         <div class="flex-1 flex flex-col p-6">
           <div class="flex flex-row items-start gap-4">
             <div
-              class="mt-1.5 w-10 h-10 bg-[rgba(175,53,133,0.1)] rounded-sm flex items-center justify-center"
+              class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center"
             >
-              <IconCheckCertificate color="#9c417c" />
+              <IconCheckCertificate color="#05716c" />
             </div>
             <div class="flex flex-col justify-center">
               <h2 class="text-lg font-semibold">Make a Sale</h2>
@@ -259,9 +259,9 @@ const completeSale = async () => {
           <div class="flex flex-row justify-between items-center mb-4">
             <div class="flex flex-row gap-3">
               <div
-                class="mt-1.5 w-10 h-10 bg-[rgba(175,53,133,0.1)] rounded-sm flex items-center justify-center"
+                class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center"
               >
-                <IconCheckCertificate color="#9c417c" />
+                <IconCheckCertificate color="#05716c" />
               </div>
               <div class="flex flex-col justify-center">
                 <h2 class="text-lg font-semibold">

@@ -1,5 +1,6 @@
 <template>
-  <svg version="1.1" viewBox="0 0 620 180" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+  <img src="/newLogo.png" />
+  <!-- <svg version="1.1" viewBox="0 0 620 180" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
     <g fill="#a3409b">
       <path d="m28.208 81.356h21.328l10.492 39.388 11.008-39.388h18.92l-19.092 60.888h-22.016z" />
       <rect x="96.749" y="78.604" width="19.436" height="64.844" ry="9.4599" />
@@ -67,5 +68,5 @@
       fill="#e88028"
       stop-color="#000000"
     />
-  </svg>
+  </svg> -->
 </template>

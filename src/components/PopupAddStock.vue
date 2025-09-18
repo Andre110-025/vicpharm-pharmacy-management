@@ -154,7 +154,7 @@ const addNewStock = async () => {
       <div class="flex flex-row justify-between items-center p-5">
         <div class="flex flex-row items-center gap-3">
           <div
-            class="w-10 h-10 bg-[rgba(175,53,133,0.1)] rounded-md flex items-center justify-center"
+            class="w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-md flex items-center justify-center"
           >
             <IconBox class="w-8 h-8 stroke-mainColor stroke-1" />
           </div>

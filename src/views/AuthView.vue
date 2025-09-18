@@ -6,12 +6,12 @@ import Logo from '@/components/Logo.vue'
 <template>
   <main class="min-h-dvh h-dvh flex">
     <div
-      class="flex-1 min-h-full w-1/2 relative bg-cover"
+      class="hidden md:block flex-1 min-h-full w-1/2 relative bg-cover"
       style="background-image: url('/pharmacist.png')"
     >
       <!-- <div class="absolute inset-0 bg-black/40"></div> -->
       <div
-        class="inset-5 h-full flex flex-col items-start justify-center text-white px-10 bg-black/40"
+        class="inset-5 h-full flex flex-col items-start justify-center text-white px-10 bg-teal-700/30"
       >
         <h2 class="">Track and Monitor your Inventory on a single Dashboard.</h2>
         <p class="mt-4">

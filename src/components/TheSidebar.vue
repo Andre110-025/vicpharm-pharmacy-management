@@ -22,7 +22,7 @@ const { user, privileges } = storeToRefs(userStore)
     <div class="pb-5 flex items-center justify-center">
       <!-- <img class="w-32" src="/logo.png" alt="" /> -->
 
-      <Logo class="w-32" />
+      <Logo class="w-[135px]" />
     </div>
     <div class="flex-1 space-y-3.5 overflow-y-auto py-5">
       <RouterLink v-if="privileges.can_view_analytics" :to="{ name: 'overview' }" class="dashNav">

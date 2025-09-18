@@ -51,6 +51,7 @@ const getMetrics = async () => {
     const response = await axios.post('getCustomersAnalytics', dateRangeDate)
 
     if (response.status == 201) {
+      console.log(response)
       const data = response.data
       metrics.sales = data.sales_spent
       metrics.cost = data.sales_spent - data.profit

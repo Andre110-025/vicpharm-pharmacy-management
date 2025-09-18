@@ -187,7 +187,7 @@ onMounted(() => {
       <div class="flex-1 h-full flex flex-col">
         <div class="p-6 flex flex-row items-center gap-[15px]">
           <div
-            class="w-11 h-11 bg-[rgba(175,53,133,0.1)] rounded-md flex items-center justify-center"
+            class="w-11 h-11 bg-[rgba(5,113,108,0.1)] rounded-md flex items-center justify-center"
           >
             <IconAccount class="w-8 h-8" />
           </div>

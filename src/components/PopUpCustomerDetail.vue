@@ -164,7 +164,7 @@ const openPdf = async (orderCode) => {
     <div class="flex-1 flex flex-col h-full p-5 space-y-5">
       <div class="flex flex-row items-center gap-3 border-b border-dashed border-b-gray-300 pb-4">
         <div
-          class="w-10 h-10 bg-[rgba(175,53,133,0.1)] rounded-md flex items-center justify-center"
+          class="w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-md flex items-center justify-center"
         >
           <IconAccount class="w-8 h-8" />
         </div>

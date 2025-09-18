@@ -24,26 +24,26 @@ const showItem = (item) => {
    <div class="mt-2.5 flex flex-row items-center space-x-4">
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'allinventory' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'allinventory' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('allinventory')"
     >
       All Inventory
       <span
         v-if="activeTab === 'allinventory'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       >
       </span>
     </button>
 
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'inventoryrecords' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'inventoryrecords' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('inventoryrecords')"
     >
       All Inventory Records
       <span
         v-if="activeTab === 'inventoryrecords'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       >
       </span>
     </button>

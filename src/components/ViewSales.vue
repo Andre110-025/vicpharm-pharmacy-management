@@ -45,37 +45,37 @@ onBeforeMount(() => {
   <div class="mt-2.5 flex flex-row items-center space-x-4">
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'sales' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'sales' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('sales')"
     >
       All Sales
       <span
         v-if="activeTab === 'sales'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       ></span>
     </button>
 
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'creditSales' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'creditSales' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('creditSales')"
     >
       Credit Sales
       <span
         v-if="activeTab === 'creditSales'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       ></span>
     </button>
 
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'salesReturn' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'salesReturn' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('salesReturn')"
     >
       Sales Return
       <span
         v-if="activeTab === 'salesReturn'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       ></span>
     </button>
   </div>

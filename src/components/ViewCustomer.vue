@@ -59,26 +59,26 @@ onBeforeMount(() => {
   <div class="mt-2.5 flex flex-row items-center space-x-4">
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'allcustomer' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'allcustomer' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('allcustomer')"
     >
       All Customer
       <span
         v-if="activeTab === 'allcustomer'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       >
       </span>
     </button>
 
     <button
       class="mt-2.5 relative pb-2"
-      :class="activeTab === 'topcustomer' ? 'text-[#9c417c] font-semibold' : 'text-gray-500'"
+      :class="activeTab === 'topcustomer' ? 'text-mainColor font-semibold' : 'text-gray-500'"
       @click="showItem('topcustomer')"
     >
       Customer By Performance
       <span
         v-if="activeTab === 'topcustomer'"
-        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#9c417c] w-3/4 mx-auto"
+        class="absolute left-0 right-0 -bottom-1 h-[2px] bg-mainColor w-3/4 mx-auto"
       >
       </span>
     </button>

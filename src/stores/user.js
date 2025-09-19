@@ -80,7 +80,7 @@ export const useUserStore = defineStore('user', () => {
       const { data, status } = await axios.get('getStoreDetailByUser')
 
       if (data.success) {
-        // console.log('got here', data)
+        console.log('got here', data)
         const {
           email_verified_at,
           created_at,

@@ -89,14 +89,14 @@ searchCustomers()
           @keyup.enter="searchCustomers"
         />
       </div>
-      <button @click="searchCustomers" class="px-4 py-2 bg-[#9c417c] text-white rounded-lg text-sm">
+      <button @click="searchCustomers" class="px-4 py-2 bg-[#05716c] text-white rounded-lg text-sm">
         Search
       </button>
     </div>
 
     <div class="flex justify-between mb-4">
       <p class="text-sm text-gray-600">Select an existing customer or create a new one</p>
-      <button @click="open()" class="flex items-center gap-2 text-[#9c417c] font-medium text-sm">
+      <button @click="open()" class="flex items-center gap-2 text-[#05716c] font-medium text-sm">
         <span>Add New Customer</span>
         <IconAccount class="w-4 h-4" />
       </button>
@@ -113,7 +113,7 @@ searchCustomers()
         <p class="text-gray-500">No customers found</p>
         <button
           @click="showAddCustomerForm"
-          class="mt-2 px-4 py-2 bg-[#9c417c] text-white rounded-lg text-sm"
+          class="mt-2 px-4 py-2 bg-[#05716c] text-white rounded-lg text-sm"
         >
           Add New Customer
         </button>
@@ -128,7 +128,7 @@ searchCustomers()
         >
           <div class="flex items-center gap-3">
             <div
-              class="w-10 h-10 bg-[rgba(175,53,133,0.1)] rounded-full flex items-center justify-center"
+              class="w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-full flex items-center justify-center"
             >
               <IconAccount class="w-5 h-5" color="#9c417c" />
             </div>

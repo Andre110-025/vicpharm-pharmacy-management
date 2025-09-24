@@ -76,16 +76,16 @@ const chartData = computed(() => {
       {
         label: 'Revenue',
         data: revenueData,
-        backgroundColor: '#AF3585',
+        backgroundColor: '#05716c',
         borderWidth: 1,
-        borderColor: '#AF3585',
+        borderColor: '#05716c',
       },
       {
         label: 'Profit',
         data: profitData,
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#71b1f8',
         borderWidth: 1,
-        borderColor: '#4CAF50',
+        borderColor: '#71b1f8',
       },
     ],
   }

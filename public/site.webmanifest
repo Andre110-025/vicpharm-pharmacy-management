@@ -2,8 +2,8 @@
   "name": "StoreHive",
   "short_name": "StoreHive",
   "icons": [
-    { "src": "/storehive-wholesale-favicon.png3.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/storehive-wholesale-favicon.png2.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
   ],
   "theme_color": "#05716c",
   "background_color": "#ffffff",

@@ -1,5 +1,5 @@
 <template>
-  <img src="/newLogo.png" />
+  <img src="/logo.png" />
   <!-- <svg version="1.1" viewBox="0 0 620 180" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
     <g fill="#a3409b">
       <path d="m28.208 81.356h21.328l10.492 39.388 11.008-39.388h18.92l-19.092 60.888h-22.016z" />

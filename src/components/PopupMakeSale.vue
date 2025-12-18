@@ -190,30 +190,29 @@ const completeSale = async () => {
 </script>
 
 <template>
-  <VueFinalModal
+ <VueFinalModal
     class="flex h-full w-full items-center justify-center"
-    content-class="relative bg-white border w-full h-[600px] max-w-[940px] rounded-2xl shadow-lg"
+    content-class="relative bg-white border w-full h-[600px] max-w-[940px] rounded-2xl shadow-lg max-[450px]:h-full max-[450px]:max-w-full max-[450px]:rounded-none max-[450px]:overflow-y-auto"
     overlay-class="bg-black/50 backdrop-blur-sm"
     :overlayTransition="'vfm-fade'"
     :contentTransition="'vfm-fade'"
     :clickToClose="true"
   >
-    <div class="flex w-full h-full">
-      <div v-if="currentView === 'first'" class="flex w-full h-full">
-        <div class="flex-1 flex flex-col p-6">
-          <div class="flex flex-row items-start gap-4">
+    <div class="flex w-full h-full max-[450px]:flex-col max-[450px]:h-auto max-[450px]:min-h-full">
+      <div v-if="currentView === 'first'" class="flex w-full h-full max-[450px]:flex-col">
+        <div class="flex-1 flex flex-col p-6 max-[450px]:p-4 max-[450px]:pb-0">
+          <div class="flex flex-row items-start gap-4 max-[450px]:gap-2">
             <div
-              class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center"
+              class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center max-[450px]:w-8 max-[450px]:h-8 max-[450px]:mt-0.5"
             >
-              <IconCheckCertificate color="#05716c" />
+              <IconCheckCertificate color="#05716c" class="max-[450px]:w-5 max-[450px]:h-5" />
             </div>
             <div class="flex flex-col justify-center">
-              <h2 class="text-lg font-semibold">Make a Sale</h2>
-              <p class="text-gray-600">Select from your stock to make sales easily.</p>
+              <h2 class="text-lg font-semibold max-[450px]:text-base">Make a Sale</h2>
+              <p class="text-gray-600 max-[450px]:text-sm">Select from your stock to make sales easily.</p>
             </div>
           </div>
 
-          <!-- Product Search Component -->
           <ProductSearch
             :userType="user.userType"
             :userBranch="user.branchId"
@@ -221,8 +220,7 @@ const completeSale = async () => {
           />
         </div>
 
-        <!-- Receipt View Component -->
-        <div class="bg-[#f7f8fa] flex-1 p-5 rounded-tr-2xl rounded-br-2xl">
+        <div class="bg-[#f7f8fa] flex-1 p-5 rounded-tr-2xl rounded-br-2xl max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200">
           <ReceiptView
             :selectedItems="selectedSale"
             :currentTime="currentTime"
@@ -242,10 +240,8 @@ const completeSale = async () => {
         </div>
       </div>
 
-      <!-- Second view remains as it was, could also be extracted to a component -->
-      <div v-if="currentView === 'second'" class="flex w-full h-full">
-        <!-- Payment form view code -->
-        <div class="bg-[#f7f8fa] flex-1 p-5 h-[599px] rounded-tl-2xl rounded-bl-2xl">
+      <div v-if="currentView === 'second'" class="flex w-full h-full max-[450px]:flex-col-reverse">
+        <div class="bg-[#f7f8fa] flex-1 p-5 h-[599px] rounded-tl-2xl rounded-bl-2xl max-[450px]:h-auto max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200">
           <ReceiptView
             :selectedItems="selectedSale"
             :currentTime="currentTime"
@@ -255,19 +251,19 @@ const completeSale = async () => {
           />
         </div>
 
-        <div class="w-1/2 p-6 flex flex-1 h-600px flex-col">
-          <div class="flex flex-row justify-between items-center mb-4">
-            <div class="flex flex-row gap-3">
+        <div class="w-1/2 p-6 flex flex-1 h-600px flex-col max-[450px]:w-full max-[450px]:p-4">
+          <div class="flex flex-row justify-between items-center mb-4 max-[450px]:mb-3">
+            <div class="flex flex-row gap-3 max-[450px]:gap-2">
               <div
-                class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center"
+                class="mt-1.5 w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-sm flex items-center justify-center max-[450px]:w-8 max-[450px]:h-8 max-[450px]:mt-0.5"
               >
-                <IconCheckCertificate color="#05716c" />
+                <IconCheckCertificate color="#05716c" class="max-[450px]:w-5 max-[450px]:h-5" />
               </div>
               <div class="flex flex-col justify-center">
-                <h2 class="text-lg font-semibold">
+                <h2 class="text-lg font-semibold max-[450px]:text-base">
                   {{ selectedCustomer ? 'Complete Sale' : 'Select Customer' }}
                 </h2>
-                <p class="text-gray-600">
+                <p class="text-gray-600 max-[450px]:text-sm max-[450px]:hidden">
                   {{
                     selectedCustomer
                       ? 'Finalize payment details'
@@ -278,28 +274,25 @@ const completeSale = async () => {
             </div>
           </div>
 
-          <!-- Customer Management Area -->
-          <div class="flex-1">
-            <!-- If no customer is selected, show search or form -->
+          <div class="flex-1 max-[450px]:overflow-y-auto">
             <div v-if="!selectedCustomer" class="h-full">
               <CustomerSale v-if="customerView === 'search'" @select-customer="selectCustomer" />
             </div>
-            <!-- If customer is selected, show payment options -->
+
             <div v-else class="h-full flex flex-col">
-              <!-- Selected Customer Info -->
-              <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                <div class="flex flex-col gap-2.5">
+              <div class="bg-gray-50 p-4 rounded-lg mb-4 max-[450px]:p-3">
+                <div class="flex flex-col gap-2.5 max-[450px]:gap-2">
                   <div>
-                    <h3 class="font-medium">Selected Customer</h3>
-                    <p class="text-gray-600">{{ selectedCustomer.name }}</p>
-                    <p class="text-sm text-gray-500">{{ selectedCustomer.phone }}</p>
-                    <p v-if="selectedCustomer.email" class="text-sm text-gray-500">
+                    <h3 class="font-medium max-[450px]:text-sm">Selected Customer</h3>
+                    <p class="text-gray-600 max-[450px]:text-sm">{{ selectedCustomer.name }}</p>
+                    <p class="text-sm text-gray-500 max-[450px]:text-xs">{{ selectedCustomer.phone }}</p>
+                    <p v-if="selectedCustomer.email" class="text-sm text-gray-500 max-[450px]:text-xs">
                       {{ selectedCustomer.email }}
                     </p>
                   </div>
 
                   <textarea
-                    class="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-1 focus:ring-mainColor text-sm"
+                    class="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-1 focus:ring-mainColor text-sm max-[450px]:text-xs"
                     name=""
                     id=""
                     cols="30"
@@ -313,10 +306,10 @@ const completeSale = async () => {
               <button
                 @click="completeSale"
                 :disabled="isLoading"
-                class="w-full mainBtn flex items-center justify-center transition duration-300 rounded-md"
+                class="w-full mainBtn flex items-center justify-center transition duration-300 rounded-md max-[450px]:py-3"
               >
-                <IconCheckCertificate class="w-5 h-5" color="#ffffff" />
-                <span>End Sale</span>
+                <IconCheckCertificate class="w-5 h-5 max-[450px]:w-4 max-[450px]:h-4" color="#ffffff" />
+                <span class="max-[450px]:text-sm">End Sale</span>
               </button>
             </div>
           </div>

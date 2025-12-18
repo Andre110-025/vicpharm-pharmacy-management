@@ -6,8 +6,11 @@ import CustomerList from './CustomerList.vue'
 import TopCustomerList from './TopCustomerList.vue'
 import PropButtonIcon from './PropButtonIcon.vue'
 import { useRoute } from 'vue-router'
+import { useModal } from 'vue-final-modal'
+import PopupAddCustomer from './PopupAddCustomer.vue'
 
 const route = useRoute()
+const customerListRef = ref(null)
 
 //button for customer and Top customer
 const activeTab = ref('allcustomer')
@@ -30,6 +33,22 @@ const handleUrlParams = () => {
   }
 }
 
+const { open: openAddUser, close: closeAddUser } = useModal({
+  component: PopupAddCustomer,
+  attrs: {
+    // edit: true,
+    onConfirm(bool) {
+      if (bool) {
+        // this is checking the child component if, a refresh method is available
+        if (customerListRef.value?.refreshCustomers) {
+          customerListRef.value.refreshCustomers()
+        }
+      }
+      closeAddUser()
+    },
+  },
+})
+
 onBeforeMount(() => {
   handleUrlParams()
   // getInventoryList()
@@ -51,6 +70,7 @@ onBeforeMount(() => {
       <PropButtonIcon
         :icon-component="IconPlus"
         class="bg-mainColor sm:hidden max-sm:absolute max-sm:right-0"
+         @click="openAddUser"
       />
     </div>
     <!-- <IconArrowBack /> -->
@@ -85,7 +105,7 @@ onBeforeMount(() => {
   </div>
 
   <!-- Tab for all Customer -->
-  <CustomerList v-if="activeTab === 'allcustomer'" />
+  <CustomerList v-if="activeTab === 'allcustomer'" ref="customerListRef" />
 
   <!-- Tab for top Customer -->
   <TopCustomerList v-else-if="activeTab === 'topcustomer'" />

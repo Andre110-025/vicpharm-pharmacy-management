@@ -75,11 +75,15 @@ watch(searchTerm, (newValue) => {
 onMounted(() => {
   getCustomers()
 })
+
+// this is what the parent is checking from
+defineExpose({
+  refreshCustomers: () => getCustomers(1)
+})
 </script>
 
-
 <template>
-      <div class="flex justify-between items-center w-full p-4 mt-2.5 max-xs:p-2 max-sm:hidden">
+  <div class="flex justify-between items-center w-full p-4 mt-2.5 max-xs:p-2 max-sm:hidden">
     <SearchBar v-model="searchTerm" />
 
     <div
@@ -108,19 +112,12 @@ onMounted(() => {
   </div>
 
   <!-- Mobile Filtering -->
-  <div class="flex sm:hidden py-4">
+  <div class="flex justify-between sm:hidden py-4 px-4">
     <div class="relative">
-      <IconSearch
-        class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-      />
-      <input
-        type="text"
-        placeholder="Search...."
-        class="w-full pl-10 p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-mainColor"
-      />
+      <SearchBar v-model="searchTerm" />
     </div>
 
-    <div class="flex gap-1.5 justify-end">
+    <div class="flex gap-1.5 justify-end max-[450px]:hidden">
       <PropButtonIcon
         :icon-component="IconFilter"
         class="border border-gray-400 text-black hover:bg-gray-100 transition"
@@ -140,7 +137,7 @@ onMounted(() => {
   </div>
 
   <!-- Desktop Table -->
-  <div class="w-full overflow-hidden rounded-lg mt-4 max-sm:hidden">
+  <div class="w-full overflow-hidden rounded-lg mt-4">
     <!--remove mt-4 when done-->
     <!-- Table -->
     <CustomerTable

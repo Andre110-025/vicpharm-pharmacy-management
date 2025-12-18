@@ -154,43 +154,44 @@ const openPdf = async (orderCode) => {
 
 <template>
   <VueFinalModal
-    class="flex h-full w-full items-center justify-center"
-    content-class="relative bg-white border w-full h-[600px] flex flex-row max-w-[940px] rounded-2xl shadow-lg"
+    class="flex h-full w-full items-center justify-center p-4"
+    content-class="relative bg-white border w-full h-full md:h-[600px] flex flex-col md:flex-row max-w-[940px] rounded-2xl shadow-lg overflow-hidden"
     overlay-class="bg-black/50 backdrop-blur-sm"
     :overlayTransition="'vfm-fade'"
     :contentTransition="'vfm-fade'"
     :clickToClose="true"
   >
-    <div class="flex-1 flex flex-col h-full p-5 space-y-5">
-      <div class="flex flex-row items-center gap-3 border-b border-dashed border-b-gray-300 pb-4">
+    <!-- Left Section - Customer Information -->
+    <div class="flex-1 flex flex-col h-full md:h-auto p-4 md:p-5 space-y-3 md:space-y-5 overflow-y-auto md:overflow-visible">
+      <div class="flex flex-row items-center gap-3 border-b border-dashed border-b-gray-300 pb-3 md:pb-4">
         <div
-          class="w-10 h-10 bg-[rgba(5,113,108,0.1)] rounded-md flex items-center justify-center"
+          class="w-8 h-8 md:w-10 md:h-10 bg-[rgba(5,113,108,0.1)] rounded-md flex items-center justify-center flex-shrink-0"
         >
-          <IconAccount class="w-8 h-8" />
+          <IconAccount class="w-6 h-6 md:w-8 md:h-8" />
         </div>
-        <div class="flex flex-col justify-center flex-1">
-          <h2 class="text-lg font-semibold">Customer Information</h2>
-          <p class="text-gray-600">View Information about your customer</p>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <h2 class="text-base md:text-lg font-semibold truncate">Customer Information</h2>
+          <p class="text-xs md:text-sm text-gray-600 truncate">View Information about your customer</p>
         </div>
 
         <button
           @click="emit('confirm')"
           type="button"
-          class="border border-black rounded p-1 flex items-center justify-center"
+          class="border border-black rounded p-1 flex items-center justify-center flex-shrink-0"
         >
-          <IconCancel color="black" class="w-5 h-5" />
+          <IconCancel color="black" class="w-4 h-4 md:w-5 md:h-5" />
         </button>
       </div>
 
-      <div class="flex-1 px-2.5 overflow-y-auto">
+      <div class="flex-1 px-0 md:px-2.5 overflow-y-auto">
         <DynamicInput label="Name" type="text" v-model="customData.name" readonly />
         <DynamicInput label="Email" type="email" v-model="customData.email" readonly />
         <DynamicInput label="Phone Number" type="tel" v-model="customData.phone" readonly />
 
         <div>
-          <label class="block mb-2">Address</label>
+          <label class="block mb-2 text-sm md:text-base">Address</label>
           <textarea
-            class="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-1 focus:ring-mainColor text-sm"
+            class="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-1 focus:ring-mainColor text-xs md:text-sm"
             name=""
             id=""
             cols="30"
@@ -200,34 +201,37 @@ const openPdf = async (orderCode) => {
           ></textarea>
         </div>
 
-        <div class="flex flex-row gap-2.5 mt-2.5">
-          <button @click="emit('confirm')" class="secondaryBtn rounded-md flex-1">Cancel</button>
+        <div class="flex flex-col sm:flex-row gap-2.5 mt-2.5">
+          <button @click="emit('confirm')" class="secondaryBtn rounded-md flex-1 text-sm md:text-base py-2">Cancel</button>
           <button
             v-if="privileges.can_add_edit_customers"
             @click="emit('confirm', true)"
-            class="mainBtn rounded-md flex-1"
+            class="mainBtn rounded-md flex-1 text-sm md:text-base py-2"
           >
             Edit Info
           </button>
         </div>
       </div>
     </div>
-    <div class="flex-1 bg-gray-100 p-5 rounded-tr-2xl rounded-br-2xl">
-      <div class="flex flex-col justify-between h-full p-5 bg-white rounded-md shadow">
+
+    <!-- Right Section - Recent Orders -->
+    <div class="flex-1 bg-gray-100 p-4 md:p-5 md:rounded-tr-2xl md:rounded-br-2xl overflow-y-auto">
+      <div class="flex flex-col justify-between h-full p-3 md:p-5 bg-white rounded-md shadow">
         <div class="space-y-2.5">
-          <h5 class="font-medium">Recent Orders</h5>
-          <div class="flex flex-row gap-2.5 items-center justify-between">
-            <SearchBar class="w-full" v-model="searchQuery" />
+          <h5 class="font-medium text-sm md:text-base">Recent Orders</h5>
+          <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center sm:justify-between">
+            <SearchBar class="w-full sm:flex-1" v-model="searchQuery" />
             <div class="relative">
               <button
                 @click="showFilters = !showFilters"
-                class="p-2 border border-neutral-300 rounded-md hover:bg-gray-100 flex items-center"
+                class="p-2 border border-neutral-300 rounded-md hover:bg-gray-100 flex items-center w-full sm:w-auto justify-center"
               >
                 <IconFilter class="w-5 h-5" />
+                <span class="ml-2 sm:hidden text-sm">Filters</span>
               </button>
               <div
                 v-if="showFilters"
-                class="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10"
+                class="absolute right-0 mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10"
               >
                 <div class="p-2">
                   <p class="font-medium text-sm mb-2">Payment Status</p>
@@ -298,11 +302,11 @@ const openPdf = async (orderCode) => {
           </div>
         </div>
 
-        <div class="flex-1 mt-5 overflow-y-auto">
-          <div v-if="filteredOrders.length === 0" class="text-center py-8 text-gray-500">
+        <div class="flex-1 mt-3 md:mt-5 overflow-y-auto">
+          <div v-if="filteredOrders.length === 0" class="text-center py-8 text-gray-500 text-sm">
             No orders match your search criteria
           </div>
-          <div v-for="(order, index) in filteredOrders" :key="index" class="mb-4">
+          <div v-for="(order, index) in filteredOrders" :key="index" class="mb-3 md:mb-4">
             <div
               class="border border-b-0 rounded-t-xl border-neutral-200 bg-neutral-100 w-fit p-1.5"
             >
@@ -310,17 +314,17 @@ const openPdf = async (orderCode) => {
               <span class="text-xs">{{ formatTime(order.created_at) }}</span>
             </div>
             <div
-              class="border border-neutral-200 p-2 rounded-tr-xl rounded-b-xl flex flex-row gap-2.5"
+              class="border border-neutral-200 p-2 md:p-3 rounded-tr-xl rounded-b-xl flex flex-col sm:flex-row gap-2.5"
             >
               <div class="flex-1 flex flex-col gap-2.5 justify-between">
                 <div>
-                  <p class="text-neutral-500 text-sm">Order Code</p>
-                  <p class="text-xs font-medium">{{ order.order_code }}</p>
+                  <p class="text-neutral-500 text-xs md:text-sm">Order Code</p>
+                  <p class="text-xs font-medium break-all">{{ order.order_code }}</p>
                 </div>
                 <div>
-                  <p class="text-neutral-500 text-sm">Payment Status</p>
+                  <p class="text-neutral-500 text-xs md:text-sm">Payment Status</p>
                   <span
-                    class="text-xs px-2 py-1 rounded-full"
+                    class="text-xs px-2 py-1 rounded-full inline-block"
                     :class="getStatusClass(order.payment_status)"
                   >
                     {{ order.payment_status }}
@@ -328,19 +332,10 @@ const openPdf = async (orderCode) => {
                 </div>
               </div>
               <div class="flex-1 flex flex-col gap-2.5 justify-between">
-                <div v-if="false">
-                  <button
-                    class="flex items-center justify-center px-1 gap-1 w-full border border-neutral-300 bg-neutral-200"
-                    @click="openPdf(order.order_code)"
-                  >
-                    <IconDownload class="w-4 h-4" />
-                    <span>Download Receipt</span>
-                  </button>
-                </div>
                 <ButtonReceiptDownload :orderCode="order.order_code" />
-                <div class="text-end">
-                  <p class="text-neutral-500 text-sm">Total Amount</p>
-                  <p class="font-medium">₦{{ formatCurrency(order.total_amount) }}</p>
+                <div class="text-start sm:text-end">
+                  <p class="text-neutral-500 text-xs md:text-sm">Total Amount</p>
+                  <p class="font-medium text-sm md:text-base">₦{{ formatCurrency(order.total_amount) }}</p>
                 </div>
               </div>
             </div>

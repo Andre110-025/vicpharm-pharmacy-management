@@ -126,11 +126,12 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="flex justify-between items-center w-full p-4 mt-2.5">
-      <!-- Search Bar -->
-      <SearchBar v-model="searchTerm" />
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center w-full p-4 mt-2.5 gap-3">
+      <div class="w-full md:w-auto">
+        <SearchBar v-model="searchTerm" />
+      </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex flex-wrap md:flex-nowrap items-center gap-2.5">
         <PropButtonIcon
           :icon-component="IconPlus"
           text="Make a Sale"

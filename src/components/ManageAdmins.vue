@@ -81,6 +81,7 @@ onMounted(() => {
       <input
         type="text"
         placeholder="Search...."
+        v-modal="searchTerm"
         class="w-full pl-10 p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-mainColor"
       />
     </div>

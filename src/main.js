@@ -1,3 +1,57 @@
+// import './assets/main.css'
+// import 'vue-final-modal/style.css'
+// import 'vue3-toastify/dist/index.css'
+// import { registerSW } from 'virtual:pwa-register'
+
+// import { createApp } from 'vue'
+// import { createPinia } from 'pinia'
+// import { createVfm } from 'vue-final-modal'
+// import Vue3Toasity from 'vue3-toastify'
+
+// import App from './App.vue'
+// import router from './router'
+// import './app.service'
+
+// registerSW({
+//   onNeedRefresh() {},
+//   onOfflineReady() {
+//     // console.log('App ready to work offline')
+//   }
+// })
+
+// const updateSW = registerSW({
+//   onNeedRefresh() {},
+//   onOfflineReady() {},
+//   onRegistered(registration) {
+//     console.log('🎯 Service Worker registered:', registration)
+//     console.log('📡 Scope:', registration?.scope)
+//   },
+//   onRegisterError(error) {
+//     console.error('❌ Service Worker registration error:', error)
+//   },
+// })
+
+// // Check if already installed
+// if (window.matchMedia('(display-mode: standalone)').matches) {
+//   console.log('🏠 App is already installed as PWA')
+// }
+
+// const app = createApp(App)
+// app.use(createVfm())
+// app.use(createPinia())
+// app.use(Vue3Toasity, {
+//   autoClose: 1000,
+//   clearOnUrlChange: false,
+// })
+// app.use(router)
+
+// app.mount('#hephzihub')
+
+// if (import.meta.env.DEV) {
+//   window.updatePWA = updateSW
+// }
+
+
 import './assets/main.css'
 import 'vue-final-modal/style.css'
 import 'vue3-toastify/dist/index.css'
@@ -9,7 +63,7 @@ import Vue3Toasity from 'vue3-toastify'
 
 import App from './App.vue'
 import router from './router'
-import './app.service'
+import './app.service' 
 
 const app = createApp(App)
 app.use(createVfm())
@@ -21,3 +75,13 @@ app.use(Vue3Toasity, {
 app.use(router)
 
 app.mount('#hephzihub')
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // This MUST be in your /public folder
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => console.log('✅ PWA Service Worker Registered!', reg.scope))
+      .catch((err) => console.error('❌ PWA Service Worker Failed!', err))
+  })
+}

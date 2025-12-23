@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
 import IconSearch from './IconSearch.vue'
 import IconNotification from './IconNotification.vue'
@@ -9,9 +9,52 @@ import { useUserStore } from '@/stores/user'
 import { useFormatCurrency } from '@/formatCurrency'
 import ChartOrder from './ChartOrder.vue'
 import ChartRevenueProfit from './ChartRevenueProfit.vue'
+import { usePWAInstall } from '@/composables/usePWAInstall'
+import IconIOS from './IconIOS.vue'
+import IconDesktop from './IconDesktop.vue'
+import IconAndroid from './IconAndroid.vue'
+import IconDownloadBtn from './IconDownloadBtn.vue'
+
+const { canInstall, installApp, isInstalled } = usePWAInstall()
+const isMobile = ref(window.innerWidth < 450)
+
+// Unified resize handler
+const handleResize = () => {
+  isMobile.value = window.innerWidth < 450
+}
+
+const showDownloadBtn = ref(false)
+
+// Setup everything on mount
+onMounted(() => {
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches
+
+  if (!isPWA) {
+    showDownloadBtn.value = true
+  }
+})
+
+const checkIfInstalled = () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  // ...
+  isInstalled.value = isStandalone || isStandaloneIOS
+}
+
+onMounted(() => {
+  handleResize() // set initial value
+
+  // Temporary dev test for button
+  // if (isMobile.value) canInstall.value = true
+
+  window.addEventListener('resize', handleResize)
+})
+
+// Clean up listener
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 
 const { formatCurrency } = useFormatCurrency()
-
 const { user } = useUserStore()
 
 // Data and loading states
@@ -84,32 +127,48 @@ const handleDateRangeChange = (range) => {
 }
 
 const formatShortNumber = (num) => {
-  if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1) + "B";
-  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
-  if (num >= 1_000) return (num / 1_000).toFixed(1) + "K";
-  return num;
+  if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1) + 'B'
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M'
+  if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K'
+  return num
 }
 
-const isMobile = ref(false)
-
-onMounted(() => {
-  const check = () => {
-    isMobile.value = window.innerWidth <= 450; 
-  };
-  check();
-  window.addEventListener("resize", check);
-});
+// const handleInstall = () => {
+//   console.log('Button clicked')
+//   console.log('canInstall:', canInstall.value)
+//   console.log('isMobile:', isMobile.value)
+//   console.log('deferredPrompt:', deferredPrompt.value)
+//   installApp()
+// }
 </script>
 
 <template>
   <header>
-    <div>
-      <h2 class="text-gray-900 sm:text-gray-800">Dashboard</h2>
-      <p class="mt-2.5 max-sm:hidden">An overview of your business performance</p>
-      <p class="sm:hidden sm:text-gray-600">
-        Here is a quick summary of what's happening with your business
-      </p>
+    <div class="flex flex-row justify-between items-center">
+      <div>
+        <h2 class="hidden min-[450px]:block text-gray-900 sm:text-gray-800">Dashboard</h2>
+        <p class="hidden min-[450px]:block mt-2.5 text-gray-600">
+          An overview of your business performance
+        </p>
+        <h6 class="block min-[450px]:hidden">Dashboard</h6>
+        <p class="block min-[450px]:hidden text-gray-600">Business performance</p>
+      </div>
+      <div>
+        <div v-if="!isInstalled">
+          <button
+            v-if="canInstall"
+            @click="installApp"
+            class="rounded-xl bg-mainColor text-white font-semibold shadow-lg flex flex-row items-center gap-2 py-2 min-[450px]:py-3"
+            title="Install the App"
+          >
+            <IconDownloadBtn />
+            <span class="hidden min-[450px]:inline">Install App</span>
+            <span class="inline min-[450px]:hidden">Install</span>
+          </button>
+        </div>
+      </div>
     </div>
+
     <DateFilter @updateDateRange="handleDateRangeChange" />
   </header>
 
@@ -127,15 +186,29 @@ onMounted(() => {
       <div v-else class="grid grid-cols-3 gap-4 mt-5">
         <div>
           <p>Sales</p>
-          <h4 class="text-mainColor">{{ isMobile ? formatShortNumber(metrics.sales) : formatCurrency(metrics.sales, 2, false) }}</h4>
+          <h4 class="text-mainColor">
+            {{
+              isMobile ? formatShortNumber(metrics.sales) : formatCurrency(metrics.sales, 2, false)
+            }}
+          </h4>
         </div>
         <div>
           <p>Cost</p>
-          <h4 class="text-mainColor">{{ isMobile ? formatShortNumber(metrics.cost) : formatCurrency(metrics.cost, 2, false) }}</h4>
+          <h4 class="text-mainColor">
+            {{
+              isMobile ? formatShortNumber(metrics.cost) : formatCurrency(metrics.cost, 2, false)
+            }}
+          </h4>
         </div>
         <div>
           <p>Profit</p>
-          <h4 class="text-mainColor">{{ isMobile ? formatShortNumber(metrics.profit) : formatCurrency(metrics.profit, 2, false) }}</h4>
+          <h4 class="text-mainColor">
+            {{
+              isMobile
+                ? formatShortNumber(metrics.profit)
+                : formatCurrency(metrics.profit, 2, false)
+            }}
+          </h4>
         </div>
       </div>
     </div>
@@ -155,7 +228,13 @@ onMounted(() => {
         </div>
         <div class="flex-1">
           <p>Stock Value</p>
-          <h4 class="text-mainColor">{{ isMobile ? formatShortNumber(metrics.stockValue) : formatCurrency(metrics.stockValue, 2, false) }}</h4>
+          <h4 class="text-mainColor">
+            {{
+              isMobile
+                ? formatShortNumber(metrics.stockValue)
+                : formatCurrency(metrics.stockValue, 2, false)
+            }}
+          </h4>
         </div>
       </div>
     </div>
@@ -361,6 +440,4 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
-  <!-- <TheMobileMenu /> -->
 </template>

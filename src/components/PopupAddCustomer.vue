@@ -8,6 +8,7 @@ import DynamicInput from './DynamicInput.vue'
 import { useUserStore } from '@/stores/user'
 import axios from 'axios'
 import { toast } from 'vue3-toastify'
+import { db } from '@/db'
 
 const { user } = useUserStore()
 
@@ -79,12 +80,49 @@ const handleSubmit = async () => {
   try {
     isLoading.value = true
 
+    if (!navigator.onLine) {
+      console.log('Offline: Cannot create or edit customer while offline.')
+
+      const offlineId = `temp-${Date.now()}`;
+      const payload = { 
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        address: customerData.address,
+        branch: customerData.branch,
+        user_type: customerData.user_type
+    };
+      const finalData = { ...payload, id: offlineId, syncStatus: 'pending' };
+
+      // Save to the local Customer table so they appear in lists immediately
+      await db.customers.put(finalData);
+    await db.syncQueue.add({
+        endpoint: props.edit ? `editCustomer/${props.customData.id}` : 'addCustomer',
+        method: 'POST',
+        payload: payload, // Use the clean payload
+        timestamp: Date.now(),
+        type: props.edit ? 'EDIT_CUSTOMER' : 'ADD_CUSTOMER'
+    });
+
+      toast.info('Saved! Will sync when online.', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+
+      emit('confirm', true)
+      isLoading.value = false
+      return
+    }
+
     const { data, status } = await axios.post(
       props.edit ? `editCustomer/${props.customData.id}` : 'addCustomer',
       customerData,
     )
 
+    console.log('Server Response:', data);
+
     if (status === 201) {
+      const serverId = data.id || data.Data?.id || data.customer?.id || props.customData?.id || `temp-${Date.now()}`;
+      await db.customers.put({ ...customerData, id: serverId })
       if (props.edit) {
         toast.success('Customer Updated Successfully', {
           position: toast.POSITION.TOP_CENTER,
@@ -105,11 +143,11 @@ const handleSubmit = async () => {
     console.error('Error creating customer:', error)
     // Handle error state
     if (props.edit) {
-      toast.success('Error Updating Customer', {
+      toast.error('Error Updating Customer', {
         position: toast.POSITION.TOP_CENTER,
       })
     } else {
-      toast.success('Error Updating Customer', {
+      toast.error('Error Updating Customer', {
         position: toast.POSITION.TOP_CENTER,
       })
     }
@@ -118,6 +156,81 @@ const handleSubmit = async () => {
     isLoading.value = false
   }
 }
+
+// const handleSubmit = async () => {
+//   try {
+//     isLoading.value = true
+
+//     if (!navigator.onLine) {
+//       console.log('Offline: Cannot create or edit customer while offline.')
+
+//       const offlineId = props.edit ? props.customData.id : `temp-${Date.now()}`
+//       const finalData = {
+//         ...customerData,
+//         id: offlineId,
+//         syncStatus: 'pending' // Flag to know it's not on the server yet
+//       }
+
+//       // Save to the local Customer table so they appear in lists immediately
+//       await db.customers.put(JSON.parse(JSON.stringify(finalData)))
+
+//       await db.syncQueue.add({
+//         endpoint: props.edit ? `editCustomer/${props.customData.id}` : 'addCustomer',
+//         method: 'POST',
+//         payload: JSON.parse(JSON.stringify(customerData)),
+//         timestamp: Date.now(),
+//         type: props.edit ? 'EDIT_CUSTOMER' : 'ADD_CUSTOMER'
+//       })
+
+//       toast.info('Saved! Will sync when online.', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+
+//       emit('confirm', true)
+//       isLoading.value = false
+//       return
+//     }
+
+//     const { data, status } = await axios.post(
+//       props.edit ? `editCustomer/${props.customData.id}` : 'addCustomer',
+//       customerData,
+//     )
+
+//     if (status === 201) {
+//       await db.customers.put({ ...customerData, id: data.id || props.customData?.id })
+//       if (props.edit) {
+//         toast.success('Customer Updated Successfully', {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       } else {
+//         toast.success('Customer Added Successfully', {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       }
+//       emit('confirm', true)
+//       isLoading.value = false
+//     } else if (status === 200) {
+//       toast.warning(data['save type'][0], {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+//     }
+//   } catch (error) {
+//     console.error('Error creating customer:', error)
+//     // Handle error state
+//     if (props.edit) {
+//       toast.error('Error Updating Customer', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+//     } else {
+//       toast.error('Error Updating Customer', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+//     }
+//     isLoading.value = false
+//   } finally {
+//     isLoading.value = false
+//   }
+// }
 </script>
 
 <template>
@@ -210,7 +323,7 @@ const handleSubmit = async () => {
             />
           </div>
 
-          <div v-if="false" class="flex flex-row gap-3">
+          <!-- <div v-if="false" class="flex flex-row gap-3">
             <select
               id="Country"
               name="Country"
@@ -235,7 +348,7 @@ const handleSubmit = async () => {
               <option value="São Paulo ">São Paulo</option>
               <option value="Queensland">Queensland</option>
             </select>
-          </div>
+          </div> -->
 
           <DynamicInput
             v-model="customerData.email"

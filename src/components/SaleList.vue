@@ -13,6 +13,7 @@ import { useUserStore } from '@/stores/user'
 import PropButtonIcon from './PropButtonIcon.vue'
 import { useModal } from 'vue-final-modal'
 import IconSearch from './IconSearch.vue'
+import { db } from '@/db'
 
 const { user, privileges } = useUserStore()
 
@@ -41,22 +42,146 @@ const statusOptions = [
 const getSalesList = async (page = 1) => {
   try {
     isLoading.value = true
-    sales.value = null
 
+    // STEP 1: FORCE SERVER CALL
+    // If online, this WILL hit the backend.
     const response = await axios.post(
       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&page=${page}`,
     )
 
-    if (response.data.success) {
-      sales.value = response.data.transactions
+    // STEP 2: IF SERVER RESPONDS, USE IT
+    if (response.data && response.data.success) {
+      const result = response.data.transactions
+      sales.value = result
+      
+      // Update cache in background
+      if (result.data) {
+        db.sales.bulkPut(JSON.parse(JSON.stringify(result.data)))
+      }
+      
       isLoading.value = false
+      return // EXIT HERE
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error)
-    // Handle error state
+    // STEP 3: ONLY IF SERVER FAILS (True Offline)
+    if (!navigator.onLine || error.isOfflineHandled) {
+      console.warn('Server unreachable. Loading local backup...')
+      
+      const localSales = await db.sales.toArray()
+      sales.value = {
+        data: localSales,
+        current_page: 1,
+        last_page: 1,
+        total: localSales.length,
+      }
+    } else {
+      console.error('Real Server Error:', error)
+    }
+  } finally {
     isLoading.value = false
   }
 }
+
+// const getSalesList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+
+//     // 1. OFFLINE LOGIC
+//     if (!navigator.onLine) {
+//       console.log('Offline: Searching Sales cache...')
+      
+//       let localData = await db.sales.toArray()
+
+//       // A. Search Filter (Invoice number, Customer name, etc.)
+//       if (searchTerm.value) {
+//         const s = searchTerm.value.toLowerCase()
+//         localData = localData.filter(item => 
+//           (item.invoice_number && item.invoice_number.toLowerCase().includes(s)) ||
+//           (item.customer_name && item.customer_name.toLowerCase().includes(s))
+//         )
+//       }
+
+//       // B. Status Filter
+//       if (dataFilter.status) {
+//         localData = localData.filter(item => item.status === dataFilter.status)
+//       }
+
+//       // C. Date Filter
+//       if (dataFilter.start && dataFilter.end) {
+//         const parseDate = (str) => {
+//           const [d, m, y] = str.split('/')
+//           return new Date(`${y}-${m}-${d}`).getTime()
+//         }
+//         const startTs = parseDate(dataFilter.start)
+//         const endTs = parseDate(dataFilter.end)
+
+//         localData = localData.filter(item => {
+//           const itemTs = new Date(item.date).getTime()
+//           return itemTs >= startTs && itemTs <= endTs
+//         })
+//       }
+
+//       sales.value = {
+//         data: localData,
+//         current_page: 1,
+//         last_page: 1,
+//         total: localData.length
+//       }
+//       isLoading.value = false
+//       return
+//     }
+
+//     // 2. ONLINE LOGIC
+//     const response = await axios.post(
+//       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       const result = response.data.transactions
+//       sales.value = result
+
+//       // 3. CACHE SYNC
+//       if (result.data && result.data.length > 0) {
+//         const rawData = JSON.parse(JSON.stringify(result.data))
+        
+//         // Ensure every sale has an ID for Dexie
+//         const dataWithIds = rawData.map((item, index) => ({
+//           ...item,
+//           id: item.id || `sale-${index}-${Date.now()}`
+//         }))
+
+//         // We use bulkPut so we don't clear old sales; 
+//         // this allows the pharmacist to see a long history offline
+//         await db.sales.bulkPut(dataWithIds)
+//       }
+      
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching sales:', error)
+//     isLoading.value = false
+//   }
+// }
+
+// const getSalesList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     sales.value = null
+
+//     const response = await axios.post(
+//       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       sales.value = response.data.transactions
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching metrics:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
 
 const updateDate = (date) => {
   dataFilter.start = date.start

@@ -131,7 +131,7 @@ const openReturnNote = (str) => {
               </div>
             </div>
           </td>
-          <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+          <!-- <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
             <div class="flex flex-row gap-4">
               <div class="flex flex-row gap-2 items-center">
                 <p
@@ -145,8 +145,23 @@ const openReturnNote = (str) => {
                 ></p>
               </div>
             </div>
-          </td>
+          </td> -->
           <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+            <div class="flex flex-row gap-4">
+              <div class="flex flex-row gap-2 items-center">
+                <p
+                  class="h-fit"
+                  v-text="
+                    (item.subtotal || 0).toLocaleString('en-NG', {
+                      style: 'currency',
+                      currency: 'NGN',
+                    })
+                  "
+                ></p>
+              </div>
+            </div>
+          </td>
+          <!-- <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
             <div class="flex flex-row gap-4">
               <p
                 :class="{
@@ -156,6 +171,20 @@ const openReturnNote = (str) => {
                 class="rounded-md py-[1px] px-2 text-[.65em] capitalize"
               >
                 {{ item.return_type.toLowerCase() }}
+              </p>
+            </div>
+          </td> -->
+          <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+            <div class="flex flex-row gap-4">
+              <p
+                :class="{
+                  'bg-green-100 text-green-900': item.return_type?.toLowerCase() === 'returnable',
+                  'bg-red-100 text-red-900': item.return_type?.toLowerCase() === 'nonreturnable',
+                  'bg-gray-100 text-gray-900': !item.return_type,
+                }"
+                class="rounded-md py-[1px] px-2 text-[.65em] capitalize"
+              >
+                {{ item.return_type?.toLowerCase() || 'unknown' }}
               </p>
             </div>
           </td>

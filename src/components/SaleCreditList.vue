@@ -11,6 +11,7 @@ import SaleCreditTable from './SaleCreditTable.vue'
 import { useUserStore } from '@/stores/user'
 import PropButtonIcon from './PropButtonIcon.vue'
 import { useModal } from 'vue-final-modal'
+import { db } from '@/db'
 
 const { user, privileges } = useUserStore()
 
@@ -26,25 +27,178 @@ const dataFilter = reactive({
   status: '',
 })
 
+// const getSalesList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     sales.value = null
+
+//     const response = await axios.post(
+//       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&credit_status=credit&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       sales.value = response.data.transactions
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching metrics:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
+
 const getSalesList = async (page = 1) => {
   try {
     isLoading.value = true
-    sales.value = null
 
+    // Attempt the server request
     const response = await axios.post(
       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&credit_status=credit&page=${page}`,
     )
 
     if (response.data.success) {
-      sales.value = response.data.transactions
+      const result = response.data.transactions
+      sales.value = result
+
+      // --- ONLINE: SYNC CACHE ---
+      if (result.data && result.data.length > 0) {
+        const cleanData = JSON.parse(JSON.stringify(result.data))
+
+        // Ensure every credit record has a primary key for Dexie
+        const dataToSave = cleanData.map((item, index) => ({
+          ...item,
+          id: item.id || item.invoice_number || `credit-${index}-${Date.now()}`
+        }))
+
+        await db.creditTable.bulkPut(dataToSave)
+      }
       isLoading.value = false
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error)
-    // Handle error state
+    // --- OFFLINE & TIMEOUT LOGIC ---
+    // Handle navigator.onLine (Physical) OR Axios Timeout (Actual Access)
+    const isOffline = error.isViewOnly || error.isOfflineHandled || !navigator.onLine
+
+    if (isOffline) {
+      console.log('🌐 Connection Issue: Loading Credit Sales from cache...')
+      
+      let localData = await db.creditTable.toArray()
+
+      // 1. Search Filter (Invoice or Customer)
+      const s = searchTerm.value.toLowerCase().trim()
+      if (s) {
+        localData = localData.filter(item => {
+          const invoice = String(item.invoice_number || item.invoice_no || '').toLowerCase()
+          const customer = String(item.customer_name || item.customer || '').toLowerCase()
+          return invoice.includes(s) || customer.includes(s)
+        })
+      }
+
+      // 2. Date Filter
+      if (dataFilter.start && dataFilter.end) {
+        // Assuming date is stored as YYYY-MM-DD or standard ISO
+        localData = localData.filter(item => {
+          const itemDate = item.date || item.created_at
+          if (!itemDate) return false
+          return itemDate >= dataFilter.start && itemDate <= dataFilter.end
+        })
+      }
+
+      // Format for Paginator
+      sales.value = {
+        data: localData,
+        current_page: 1,
+        last_page: 1,
+        total: localData.length
+      }
+      
+      isLoading.value = false
+      return 
+    }
+
+    console.error('Error fetching credit sales:', error)
     isLoading.value = false
   }
 }
+
+// const getSalesList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+
+//     // --- 1. OFFLINE LOGIC ---
+//     // Check if we are offline and only run this if it's the PWA
+//     if (!navigator.onLine) {
+//       console.log('Offline: Loading Credit Sales from cache...')
+      
+//       let localData = await db.creditTable.toArray()
+
+//       // A. Search Filter (by Invoice or Customer Name)
+//       if (searchTerm.value) {
+//         const s = searchTerm.value.toLowerCase()
+//         localData = localData.filter(item => 
+//           (item.invoice_number && item.invoice_number.toLowerCase().includes(s)) ||
+//           (item.customer_name && item.customer_name.toLowerCase().includes(s))
+//         )
+//       }
+
+//       // B. Date Filter
+//       if (dataFilter.start && dataFilter.end) {
+//         const parseDate = (str) => {
+//           const [d, m, y] = str.split('/')
+//           return new Date(`${y}-${m}-${d}`).getTime()
+//         }
+//         const startTs = parseDate(dataFilter.start)
+//         const endTs = parseDate(dataFilter.end)
+
+//         localData = localData.filter(item => {
+//           const itemTs = new Date(item.date).getTime()
+//           return itemTs >= startTs && itemTs <= endTs
+//         })
+//       }
+
+//       sales.value = {
+//         data: localData,
+//         current_page: 1,
+//         last_page: 1,
+//         total: localData.length
+//       }
+//       isLoading.value = false
+//       return
+//     }
+
+//     // --- 2. ONLINE FETCH ---
+//     const response = await axios.post(
+//       `searchtransactionsByOwner/${user.userType}?branch_id=${user.branchId}&search=${searchTerm.value}&status=${dataFilter.status}&start=${dataFilter.start}&end=${dataFilter.end}&credit_status=credit&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       const result = response.data.transactions
+//       sales.value = result
+
+//       // --- 3. CACHE SYNC ---
+//       if (result.data && result.data.length > 0) {
+//         const cleanData = JSON.parse(JSON.stringify(result.data))
+
+//         const dataToSave = cleanData.map((item, index) => ({
+//           ...item,
+//           id: item.id || `credit-${index}-${Date.now()}`
+//         }))
+
+//         try {
+//           // Use bulkPut to keep building the list of credit sales
+//           await db.creditTable.bulkPut(dataToSave)
+//         } catch (dexieErr) {
+//           console.error('Dexie Error:', dexieErr)
+//         }
+//       }
+
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching credit sales:', error)
+//     isLoading.value = false
+//   }
+// }
 
 const updateDate = (date) => {
   dataFilter.start = date.start

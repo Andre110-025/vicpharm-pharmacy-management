@@ -7,6 +7,7 @@ import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { useModal } from 'vue-final-modal'
 import PopupAddCustomer from './PopupAddCustomer.vue'
+import { db } from '@/db'
 
 const { user } = useUserStore()
 
@@ -17,32 +18,94 @@ const customers = ref([])
 const isLoading = ref(false)
 const noResults = ref(false)
 
-const searchCustomers = async (page = 1) => {
-  // if (!searchQuery.value.trim()) return
+// const searchCustomers = async (page = 1) => {
+//   // if (!searchQuery.value.trim()) return
 
+//   try {
+//     isLoading.value = true
+//     noResults.value = false
+
+//     // Replace with your actual API endpoint
+//     const response = await axios.post('getCustomer', {
+//       user_type: user.userType,
+//       search: searchQuery.value,
+//       page,
+//     })
+
+//     console.log(response)
+//     if (response.status === 201) {
+//       customers.value = response.data['save type'].data || response.data['save type'] || []
+//       noResults.value = customers.value.length === 0
+//     } else {
+//       customers.value = []
+//       noResults.value = true
+//     }
+//   } catch (error) {
+//     console.error('Error searching customers:', error)
+//     customers.value = []
+//     noResults.value = true
+//   } finally {
+//     isLoading.value = false
+//   }
+// }
+
+const searchCustomers = async (page = 1) => {
   try {
     isLoading.value = true
     noResults.value = false
 
-    // Replace with your actual API endpoint
+    // --- 1. OFFLINE LOGIC ---
+    if (!navigator.onLine) {
+      console.log('Offline: Searching local customer database...')
+      
+      // Get all customers from Dexie
+      let localData = await db.customers.toArray()
+
+      // Filter by name, email, or phone
+      if (searchQuery.value) {
+        const s = searchQuery.value.toLowerCase()
+        localData = localData.filter(c => 
+          (c.name && c.name.toLowerCase().includes(s)) ||
+          (c.email && c.email.toLowerCase().includes(s)) ||
+          (c.phone && c.phone.includes(s))
+        )
+      }
+
+      customers.value = localData
+      noResults.value = customers.value.length === 0
+      isLoading.value = false
+      return
+    }
+
+    // --- 2. ONLINE FETCH ---
     const response = await axios.post('getCustomer', {
       user_type: user.userType,
       search: searchQuery.value,
       page,
     })
 
-    console.log(response)
     if (response.status === 201) {
-      customers.value = response.data['save type'].data || response.data['save type'] || []
+      const result = response.data['save type'].data || response.data['save type'] || []
+      customers.value = result
       noResults.value = customers.value.length === 0
+
+      // --- 3. CACHE SYNC ---
+      if (result.length > 0) {
+        // We use bulkPut to save the searched customers to local storage
+        // This ensures they are available for the NEXT offline search
+        await db.customers.bulkPut(JSON.parse(JSON.stringify(result)))
+      }
     } else {
       customers.value = []
       noResults.value = true
     }
   } catch (error) {
     console.error('Error searching customers:', error)
-    customers.value = []
-    noResults.value = true
+
+    // Fallback to local data if the request fails due to sudden network drop
+    const fallback = await db.customers.toArray()
+    customers.value = fallback.slice(0, 20)
+    noResults.value = customers.value.length === 0
   } finally {
     isLoading.value = false
   }

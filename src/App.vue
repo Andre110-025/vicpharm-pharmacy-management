@@ -16,6 +16,13 @@ onMounted(() => {
     }, 7000)
   }
 })
+
+import { useStoreHive } from '@/stores/inventory'
+const store = useStoreHive()
+
+onMounted(() => {
+  store.initDashboard()
+})
 </script>
 
 <template>

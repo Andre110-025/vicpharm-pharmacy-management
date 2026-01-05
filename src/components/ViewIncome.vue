@@ -14,6 +14,7 @@ import { useUserStore } from '@/stores/user'
 import { useFormatCurrency } from '@/formatCurrency'
 import { useHelpers } from '@/helper'
 import { toZonedTime } from 'date-fns-tz'
+import { db } from '@/db'
 
 const { formatCurrency } = useFormatCurrency()
 const { formatDate } = useHelpers()
@@ -48,24 +49,168 @@ const incomeFilter = reactive({
   end: formatDate(getTodayWAT()),
 })
 
+// const getIncomeList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     incomeList.value = null
+
+//     const response = await axios.post(`incomeretuns?page=${page}`, incomeFilter)
+
+//     if (response.status === 201 && response.data.success) {
+//       incomeMetrics.value = response.data.totals
+//       incomeList.value = response.data.IncomeList
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching metrics:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
+
 const getIncomeList = async (page = 1) => {
   try {
     isLoading.value = true
-    incomeList.value = null
 
+    // Attempt the network request
     const response = await axios.post(`incomeretuns?page=${page}`, incomeFilter)
 
     if (response.status === 201 && response.data.success) {
-      incomeMetrics.value = response.data.totals
-      incomeList.value = response.data.IncomeList
+      const result = response.data.IncomeList
+      const metrics = response.data.totals
+      
+      incomeMetrics.value = metrics
+      incomeList.value = result
+
+      // --- ONLINE: UPDATE CACHE ---
+      if (result.data && result.data.length > 0) {
+        const rawData = JSON.parse(JSON.stringify(result.data))
+        
+        // Ensure every row has a unique 'id' for Dexie
+        const dataWithIds = rawData.map((item, index) => ({
+          ...item,
+          id: item.id || `inc-${index}-${Date.now()}`
+        }))
+
+        // Save the table rows
+        await db.income.bulkPut(dataWithIds)
+
+        // Save the summary cards (totals)
+        await db.dashboard_cache.put({
+          id: 'income_metrics', 
+          data: JSON.parse(JSON.stringify(metrics))
+        })
+      }
+
       isLoading.value = false
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error)
-    // Handle error state
+    // --- OFFLINE / TIMEOUT LOGIC ---
+    const isOffline = error.isViewOnly || error.isOfflineHandled || !navigator.onLine
+
+    if (isOffline) {
+      console.log('🌐 Connection Issue: Loading Income from Dexie...')
+      
+      // 1. Load the table list from Dexie
+      const cachedIncome = await db.income.toArray()
+      
+      // 2. Load the metrics from dashboard_cache
+      const cachedMetrics = await db.dashboard_cache.get('income_metrics')
+
+      if (cachedIncome.length > 0) {
+        // Format to match paginator expectations
+        incomeList.value = {
+          data: cachedIncome,
+          current_page: 1,
+          last_page: 1,
+          total: cachedIncome.length
+        }
+        
+        if (cachedMetrics) {
+          incomeMetrics.value = cachedMetrics.data
+        }
+      } else {
+        // Optional: toast if no cache is found
+        console.warn('No cached income data found.')
+      }
+      
+      isLoading.value = false
+      return // Stop the function
+    }
+
+    console.error('Error fetching income:', error)
     isLoading.value = false
   }
 }
+
+// const getIncomeList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+
+//     // 1. Check Offline
+//     if (!navigator.onLine) {
+//       console.log('Offline: Loading Income from cache...')
+      
+//       // Load the table list
+//       const cachedIncome = await db.income.toArray()
+      
+//       // Load the specific metrics object using the 'income_metrics' key
+//       const cachedMetrics = await db.dashboard_cache.get('income_metrics')
+
+//       if (cachedIncome.length > 0) {
+//         incomeList.value = {
+//           data: cachedIncome,
+//           current_page: 1,
+//           last_page: 1,
+//           total: cachedIncome.length
+//         }
+        
+//         if (cachedMetrics) {
+//           incomeMetrics.value = cachedMetrics.data
+//         }
+        
+//         isLoading.value = false
+//         return
+//       }
+//     }
+
+//     // 2. Online: Fetch from Server
+//     const response = await axios.post(`incomeretuns?page=${page}`, incomeFilter)
+
+//     if (response.status === 201 && response.data.success) {
+//       const result = response.data.IncomeList
+//       const metrics = response.data.totals
+      
+//       incomeMetrics.value = metrics
+//       incomeList.value = result
+
+//       // 3. Update Dexie
+//       if (result.data && result.data.length > 0) {
+//         const rawData = JSON.parse(JSON.stringify(result.data))
+        
+//         // Add IDs so Dexie doesn't crash (since we need 'id' per your schema)
+//         const dataWithIds = rawData.map((item, index) => ({
+//           ...item,
+//           id: item.id || `inc-${index}-${Date.now()}`
+//         }))
+
+//         // Save the list
+//         await db.income.bulkPut(dataWithIds)
+
+//         // Save the totals/metrics object to your existing dashboard_cache
+//         await db.dashboard_cache.put({
+//           id: 'income_metrics', // This unique ID keeps it from overwriting other stats
+//           data: JSON.parse(JSON.stringify(metrics))
+//         })
+//       }
+
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching income:', error)
+//     isLoading.value = false
+//   }
+// }
 
 const showIncomeFilter = ref(false)
 

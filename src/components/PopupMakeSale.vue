@@ -9,6 +9,7 @@ import { useUserStore } from '@/stores/user'
 import ProductSearch from './SaleProductSearch.vue'
 import ReceiptView from './SaleReceiptView.vue'
 import CustomerSale from './CustomerSale.vue'
+import { db } from '@/db'
 
 const { user } = useUserStore()
 
@@ -166,31 +167,153 @@ const selectCustomer = (customer) => {
   toast.success(`Customer ${customer.name} selected`)
 }
 
-// Complete the sale function
 const completeSale = async () => {
   const finalSaleData = prepareSaleData()
-  console.log('Final sale data:', finalSaleData)
-  // Here we would typically send this data to the API
-
+  
   try {
     isLoading.value = true
 
+    // 1. ALWAYS TRY THE SERVER FIRST
     const response = await axios.post('makeSales', finalSaleData)
 
     if (response.status === 200 || response.status === 201) {
       toast.success('Sale completed successfully')
+      emits('confirm', true)
     }
   } catch (error) {
+    // 2. OFFLINE FALLBACK
+    // Check if browser is offline OR if our interceptor handled an offline request
+    const isOffline = !navigator.onLine || error.isOfflineHandled
+
+    if (isOffline) {
+      console.log('🌐 Connection Issue: Processing Sale and deducting stock locally...')
+
+      const offlineSaleId = `offline-sale-${Date.now()}`
+      const rawSaleData = {
+        ...finalSaleData,
+        id: offlineSaleId,
+        invoice_number: `PENDING-${Date.now()}`, // Temporary invoice number
+        created_at: new Date().toISOString(),
+        is_offline: true,
+        status: 'pending', // Matches your sales table status
+      }
+
+      // "Clean" for Dexie
+      const cleanSaleData = JSON.parse(JSON.stringify(rawSaleData))
+
+      // 3. ADD TO SYNC QUEUE (to be sent to backend later)
+      await db.syncQueue.add({
+        endpoint: 'makeSales',
+        method: 'POST',
+        payload: cleanSaleData,
+        timestamp: Date.now(),
+        type: 'MAKE_SALE',
+      })
+
+      // 4. DEDUCT STOCK LOCALLY (Immediate UI feedback)
+      for (const soldProduct of finalSaleData.allproducts.product) {
+        const localProduct = await db.products.get(soldProduct.product_id)
+        if (localProduct) {
+          const newQty = parseInt(localProduct.quantity || 0) - parseInt(soldProduct.qty)
+          await db.products.update(soldProduct.product_id, {
+            quantity: newQty >= 0 ? newQty : 0,
+          })
+        }
+      }
+
+      // 5. ADD TO LOCAL SALES TABLE (So it shows up in the list immediately)
+      await db.sales.add(cleanSaleData)
+
+      toast.info('Sale saved offline. Stock has been updated.', {
+        position: 'top-center',
+      })
+
+      emits('confirm', true)
+      return
+    }
+
+    // 6. REAL SERVER ERROR (e.g., 500 or 422 Validation Error)
     console.error('Error completing sale', error)
-    toast.error('Error completing sale')
+    const errorMsg = error.response?.data?.message || 'Error completing sale'
+    toast.error(errorMsg)
+  } finally {
+    isLoading.value = false
   }
-  // Close modal or navigate as needed
-  emits('confirm', true)
 }
+
+// Complete the sale function
+// const completeSale = async () => {
+//   const finalSaleData = prepareSaleData()
+//   console.log('Final sale data:', finalSaleData)
+//   // Here we would typically send this data to the API
+
+//   try {
+//     isLoading.value = true
+
+//     if (!navigator.online) {
+//       console.log('Offline: Processing Sale and deducting stock locally...')
+
+//       const offlineSaleId = `offline-sale-${Date.now()}`
+
+//       const rawSaleData = {
+//         ...finalSaleData,
+//         id: offlineSaleId,
+//         created_at: new Date().toISOString(),
+//         is_offline: true,
+//       }
+
+//       // 2. "Clean" it for Dexie
+//       const cleanSaleData = JSON.parse(JSON.stringify(rawSaleData))
+
+//       await db.syncQueue.add({
+//         endpoint: 'makeSales',
+//         method: 'POST',
+//         payload: cleanSaleData,
+//         timestamp: Date.now(),
+//         type: 'MAKE_SALE',
+//       })
+
+//       for (const soldProduct of finalSaleData.allproducts.product) {
+//         const localProduct = await db.products.get(soldProduct.product_id)
+//         if (localProduct) {
+//           const newQty = parseInt(localProduct.quantity || 0) - parseInt(soldProduct.qty)
+//           await db.products.update(soldProduct.product_id, {
+//             quantity: newQty >= 0 ? newQty : 0,
+//           })
+//         }
+//       }
+
+//       await db.sales.add({
+//         ...cleanSaleData,
+//         invoice_number: `OFF-${Date.now()}`,
+//         total: finalSaleData.total_amount,
+//         status: 'pending-sync',
+//       })
+
+//       toast.info('Sale saved offline. Stock has been updated.', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+
+//       emits('confirm', true)
+//       return
+//     }
+
+//     const response = await axios.post('makeSales', finalSaleData)
+
+//     if (response.status === 200 || response.status === 201) {
+//       toast.success('Sale completed successfully')
+//     }
+//   } catch (error) {
+//     console.error('Error completing sale', error)
+//     toast.error('Error completing sale')
+//   }
+//   // Close modal or navigate as needed
+//   emits('confirm', true)
+// }
 </script>
 
 <template>
- <VueFinalModal
+  <VueFinalModal
     class="flex h-full w-full items-center justify-center"
     content-class="relative bg-white border w-full h-[600px] max-w-[940px] rounded-2xl shadow-lg max-[450px]:h-full max-[450px]:max-w-full max-[450px]:rounded-none max-[450px]:overflow-y-auto"
     overlay-class="bg-black/50 backdrop-blur-sm"
@@ -209,7 +332,9 @@ const completeSale = async () => {
             </div>
             <div class="flex flex-col justify-center">
               <h2 class="text-lg font-semibold max-[450px]:text-base">Make a Sale</h2>
-              <p class="text-gray-600 max-[450px]:text-sm">Select from your stock to make sales easily.</p>
+              <p class="text-gray-600 max-[450px]:text-sm">
+                Select from your stock to make sales easily.
+              </p>
             </div>
           </div>
 
@@ -220,7 +345,9 @@ const completeSale = async () => {
           />
         </div>
 
-        <div class="bg-[#f7f8fa] flex-1 p-5 rounded-tr-2xl rounded-br-2xl max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200">
+        <div
+          class="bg-[#f7f8fa] flex-1 p-5 rounded-tr-2xl rounded-br-2xl max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200"
+        >
           <ReceiptView
             :selectedItems="selectedSale"
             :currentTime="currentTime"
@@ -241,7 +368,9 @@ const completeSale = async () => {
       </div>
 
       <div v-if="currentView === 'second'" class="flex w-full h-full max-[450px]:flex-col-reverse">
-        <div class="bg-[#f7f8fa] flex-1 p-5 h-[599px] rounded-tl-2xl rounded-bl-2xl max-[450px]:h-auto max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200">
+        <div
+          class="bg-[#f7f8fa] flex-1 p-5 h-[599px] rounded-tl-2xl rounded-bl-2xl max-[450px]:h-auto max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:border-t max-[450px]:border-gray-200"
+        >
           <ReceiptView
             :selectedItems="selectedSale"
             :currentTime="currentTime"
@@ -285,8 +414,13 @@ const completeSale = async () => {
                   <div>
                     <h3 class="font-medium max-[450px]:text-sm">Selected Customer</h3>
                     <p class="text-gray-600 max-[450px]:text-sm">{{ selectedCustomer.name }}</p>
-                    <p class="text-sm text-gray-500 max-[450px]:text-xs">{{ selectedCustomer.phone }}</p>
-                    <p v-if="selectedCustomer.email" class="text-sm text-gray-500 max-[450px]:text-xs">
+                    <p class="text-sm text-gray-500 max-[450px]:text-xs">
+                      {{ selectedCustomer.phone }}
+                    </p>
+                    <p
+                      v-if="selectedCustomer.email"
+                      class="text-sm text-gray-500 max-[450px]:text-xs"
+                    >
                       {{ selectedCustomer.email }}
                     </p>
                   </div>
@@ -308,7 +442,10 @@ const completeSale = async () => {
                 :disabled="isLoading"
                 class="w-full mainBtn flex items-center justify-center transition duration-300 rounded-md max-[450px]:py-3"
               >
-                <IconCheckCertificate class="w-5 h-5 max-[450px]:w-4 max-[450px]:h-4" color="#ffffff" />
+                <IconCheckCertificate
+                  class="w-5 h-5 max-[450px]:w-4 max-[450px]:h-4"
+                  color="#ffffff"
+                />
                 <span class="max-[450px]:text-sm">End Sale</span>
               </button>
             </div>

@@ -87,7 +87,37 @@ const deleteRole = async (id) => {
     })
 }
 
+// const returnFormatted = (dataTimeStr) => {
+//   const date = new Date(dataTimeStr)
+
+//   // Format parts
+//   const options = {
+//     weekday: 'short',
+//     year: 'numeric',
+//     month: 'short',
+//     day: '2-digit',
+//     hour: '2-digit',
+//     minute: '2-digit',
+//     hour12: true,
+//     timeZone: 'UTC',
+//   }
+//   const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date)
+
+//   const getPart = (type) => parts.find((p) => p.type === type)?.value || ''
+
+//   // Build custom format: Thu, 01 Feb 2024 | 12:55 AM
+//   const formatted = `${getPart('weekday')}, ${getPart('day')} ${getPart('month')} ${getPart('year')} | ${getPart('hour')}:${getPart('minute')} ${getPart('dayPeriod')}`
+
+//   // console.log(formatted, parts, getPart)
+//   return formatted
+// }
+
 const returnFormatted = (dataTimeStr) => {
+  // 1. SAFETY CHECK: If the date is missing or broken, return a placeholder
+  if (!dataTimeStr || isNaN(new Date(dataTimeStr).getTime())) {
+    return '---' 
+  }
+
   const date = new Date(dataTimeStr)
 
   // Format parts
@@ -101,15 +131,17 @@ const returnFormatted = (dataTimeStr) => {
     hour12: true,
     timeZone: 'UTC',
   }
-  const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date)
 
-  const getPart = (type) => parts.find((p) => p.type === type)?.value || ''
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date)
+    const getPart = (type) => parts.find((p) => p.type === type)?.value || ''
 
-  // Build custom format: Thu, 01 Feb 2024 | 12:55 AM
-  const formatted = `${getPart('weekday')}, ${getPart('day')} ${getPart('month')} ${getPart('year')} | ${getPart('hour')}:${getPart('minute')} ${getPart('dayPeriod')}`
-
-  // console.log(formatted, parts, getPart)
-  return formatted
+    // Build custom format: Thu, 01 Feb 2024 | 12:55 AM
+    return `${getPart('weekday')}, ${getPart('day')} ${getPart('month')} ${getPart('year')} | ${getPart('hour')}:${getPart('minute')} ${getPart('dayPeriod')}`
+  } catch (e) {
+    // 2. BACKUP SAFETY: If the formatter itself fails
+    return 'Invalid Date'
+  }
 }
 </script>
 

@@ -15,6 +15,7 @@ import { useUserStore } from '@/stores/user'
 import { useModal } from 'vue-final-modal'
 import CustomerTable from './CustomerTable.vue'
 import SearchBar from './SearchBar.vue'
+import { db } from '@/db'
 
 const { user, privileges } = useUserStore()
 const isLoading = ref(false)
@@ -25,27 +26,177 @@ const customers = ref(null)
 
 const showCustomerFilter = ref(false)
 
+// const getCustomers = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+
+//     // 1. Check Offline
+//     if (!navigator.onLine) {
+//       console.log('Offline: Searching Dexie...')
+
+//       let localData = []
+//       const searchLower = searchTerm.value.toLowerCase()
+
+//       if (searchTerm.value) {
+//         localData = await db.customers
+//           .filter((customer) => {
+//             const nameMatch = customer.name && customer.name.toLowerCase().includes(searchLower)
+//             const phoneMatch = customer.phone && customer.phone.includes(searchTerm.value)
+//             return nameMatch || phoneMatch
+//           })
+//           .toArray()
+//       } else {
+//         // If no search term, just get all
+//         localData = await db.customers.toArray()
+//       }
+
+//       customers.value = {
+//         data: localData,
+//         current_page: 1,
+//         last_page: 1,
+//         total: localData.length,
+//       }
+//       isLoading.value = false
+//       return
+//     }
+
+//     const response = await axios.post('getCustomer', {
+//       user_type: user.userType,
+//       search: searchTerm.value,
+//       page,
+//     })
+
+//     if (response.status === 201) {
+//       const result = response.data['save type']
+//       customers.value = result
+
+//       // Update Dexie cache
+//       if (result.data && result.data.length > 0) {
+//         const rawData = JSON.parse(JSON.stringify(result.data))
+
+//         // Note: Removed .clear() so we accumulate customers for a better offline search experience
+//         await db.customers.bulkPut(rawData)
+//       }
+
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching customers:', error)
+//     isLoading.value = false
+//   }
+// }
+
 const getCustomers = async (page = 1) => {
   try {
     isLoading.value = true
-    customers.value = null
 
+    // Attempt the actual network request
     const response = await axios.post('getCustomer', {
       user_type: user.userType,
       search: searchTerm.value,
       page,
     })
 
+    // --- ONLINE SUCCESS LOGIC ---
     if (response.status === 201) {
-      customers.value = response.data['save type']
+      const result = response.data['save type']
+      customers.value = result
+
+      // Update Dexie cache so data is ready for the next time we go offline
+      if (result.data && result.data.length > 0) {
+        const rawData = JSON.parse(JSON.stringify(result.data))
+        await db.customers.bulkPut(rawData)
+      }
+
       isLoading.value = false
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error)
-    // Handle error state
+    // --- OFFLINE / TIMEOUT / NETWORK ERROR LOGIC ---
+    
+    // This triggers if Layer 1 (Request Interceptor) OR Layer 2 (Response Interceptor) fails
+    const isOffline = error.isViewOnly || error.isOfflineHandled || !navigator.onLine
+
+    if (isOffline) {
+    let localData = await db.customers.toArray();
+    
+    // Sort localData so 'pending' items are at the top
+    localData.sort((a, b) => (a.syncStatus === 'pending' ? -1 : 1));
+
+    if (searchTerm.value) {
+        const searchLower = searchTerm.value.toLowerCase();
+        localData = localData.filter(c => 
+            c.name?.toLowerCase().includes(searchLower) || 
+            c.phone?.includes(searchTerm.value)
+        );
+    }
+
+    customers.value = {
+        data: localData,
+        current_page: 1,
+        last_page: 1,
+        total: localData.length,
+    };
+    isLoading.value = false;
+    return;
+}
+    // if (isOffline) {
+    //   console.log('🌐 Connection Issue: Loading customers from Dexie...')
+
+    //   let localData = []
+    //   const searchLower = searchTerm.value.toLowerCase()
+
+    //   // Perform local search/filter in Dexie
+    //   if (searchTerm.value) {
+    //     localData = await db.customers
+    //       .filter((customer) => {
+    //         const nameMatch = customer.name?.toLowerCase().includes(searchLower)
+    //         const phoneMatch = customer.phone?.includes(searchTerm.value)
+    //         return nameMatch || phoneMatch
+    //       })
+    //       .toArray()
+    //   } else {
+    //     localData = await db.customers.toArray()
+    //   }
+
+    //   // Format the data to match what the table/paginator expects
+    //   customers.value = {
+    //     data: localData,
+    //     current_page: 1,
+    //     last_page: 1,
+    //     total: localData.length,
+    //   }
+      
+    //   isLoading.value = false
+    //   return // Stop the function here
+    // }
+
+    // If it's a real server error (like a 500 error), log it normally
+    console.error('Error fetching customers:', error)
     isLoading.value = false
   }
 }
+
+// const getCustomers = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     customers.value = null
+
+//     const response = await axios.post('getCustomer', {
+//       user_type: user.userType,
+//       search: searchTerm.value,
+//       page,
+//     })
+
+//     if (response.status === 201) {
+//       customers.value = response.data['save type']
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching metrics:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
 
 const { open: openAddUser, close: closeAddUser } = useModal({
   component: PopupAddCustomer,
@@ -78,7 +229,7 @@ onMounted(() => {
 
 // this is what the parent is checking from
 defineExpose({
-  refreshCustomers: () => getCustomers(1)
+  refreshCustomers: () => getCustomers(1),
 })
 </script>
 
@@ -113,7 +264,7 @@ defineExpose({
 
   <!-- Mobile Filtering -->
   <div class="flex justify-between sm:hidden py-4 px-4">
-    <div class="relative w-full ">
+    <div class="relative w-full">
       <IconSearch
         class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
       />

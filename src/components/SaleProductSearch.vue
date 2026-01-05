@@ -6,6 +6,7 @@ import IconEmptyBox from './IconEmptyBox.vue'
 import axios from 'axios'
 import { toast } from 'vue3-toastify'
 import { required } from '@vuelidate/validators'
+import { db } from '@/db'
 
 const props = defineProps({
   userType: {
@@ -24,22 +25,83 @@ const searchQuery = ref('')
 const productQuery = ref(null)
 const showAddStock = ref(false)
 
+// const getInventoryList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     productQuery.value = null
+//     showAddStock.value = false
+
+//     const response = await axios.post(
+//       `searchSellingProductByOwner/${props.userType}?branch=${props.userBranch}&active=1&search=${searchQuery.value}&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       productQuery.value = response.data.products.data
+//       isLoading.value = false
+
+//       if (productQuery.value.length === 0) {
+//         showAddStock.value = true
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error fetching Data:', error)
+//     isLoading.value = false
+//   }
+// }
+
 const getInventoryList = async (page = 1) => {
   try {
     isLoading.value = true
     productQuery.value = null
     showAddStock.value = false
 
+    // --- 1. OFFLINE LOGIC ---
+    if (!navigator.onLine) {
+      console.log('Offline: Searching local product cache...')
+      
+      let localData = await db.products.toArray()
+
+      // A. Search Filter (by Product Name or SKU)
+      if (searchQuery.value) {
+        const s = searchQuery.value.toLowerCase()
+        localData = localData.filter(item => 
+          (item.product_name && item.product_name.toLowerCase().includes(s)) ||
+          (item.sku && item.sku.some(s_item => s_item.sku_code && s_item.sku_code.includes(s)))
+        )
+      }
+
+      productQuery.value = localData
+      isLoading.value = false
+      
+      if (productQuery.value.length === 0) {
+        showAddStock.value = true
+      }
+      return
+    }
+
+    // --- 2. ONLINE FETCH ---
     const response = await axios.post(
       `searchSellingProductByOwner/${props.userType}?branch=${props.userBranch}&active=1&search=${searchQuery.value}&page=${page}`,
     )
 
     if (response.data.success) {
-      productQuery.value = response.data.products.data
+      const result = response.data.products.data
+      productQuery.value = result
       isLoading.value = false
 
       if (productQuery.value.length === 0) {
         showAddStock.value = true
+      }
+
+      // --- 3. CACHE SYNC ---
+      if (result && result.length > 0) {
+        // We use bulkPut to ensure our search cache is fresh
+        // Note: We map 'id' to ensure Dexie has a primary key
+        const dataToSave = result.map(item => ({
+          ...item,
+          id: item.id || item.product_name // fallback if id is missing
+        }))
+        await db.products.bulkPut(JSON.parse(JSON.stringify(dataToSave)))
       }
     }
   } catch (error) {
@@ -47,6 +109,67 @@ const getInventoryList = async (page = 1) => {
     isLoading.value = false
   }
 }
+
+// const getInventoryList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     productQuery.value = null
+//     showAddStock.value = false
+
+//     // --- 1. OFFLINE LOGIC ---
+//     if (!navigator.onLine) {
+//       console.log('Offline: Searching local product cache...')
+      
+//       let localData = await db.products.toArray()
+
+//       // A. Search Filter (by Product Name or SKU)
+//       if (searchQuery.value) {
+//         const s = searchQuery.value.toLowerCase()
+//         localData = localData.filter(item => 
+//           (item.product_name && item.product_name.toLowerCase().includes(s)) ||
+//           (item.sku && item.sku.some(s_item => s_item.sku_code && s_item.sku_code.includes(s)))
+//         )
+//       }
+
+//       productQuery.value = localData
+//       isLoading.value = false
+      
+//       if (productQuery.value.length === 0) {
+//         showAddStock.value = true
+//       }
+//       return
+//     }
+
+//     // --- 2. ONLINE FETCH ---
+//     const response = await axios.post(
+//       `searchSellingProductByOwner/${props.userType}?branch=${props.userBranch}&active=1&search=${searchQuery.value}&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       const result = response.data.products.data
+//       productQuery.value = result
+//       isLoading.value = false
+
+//       if (productQuery.value.length === 0) {
+//         showAddStock.value = true
+//       }
+
+//       // --- 3. CACHE SYNC ---
+//       if (result && result.length > 0) {
+//         // We use bulkPut to ensure our search cache is fresh
+//         // Note: We map 'id' to ensure Dexie has a primary key
+//         const dataToSave = result.map(item => ({
+//           ...item,
+//           id: item.id || item.product_name // fallback if id is missing
+//         }))
+//         await db.products.bulkPut(JSON.parse(JSON.stringify(dataToSave)))
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error fetching Data:', error)
+//     isLoading.value = false
+//   }
+// }
 
 const getTotalQuantity = (item) => {
   let total = 0

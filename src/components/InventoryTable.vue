@@ -290,10 +290,10 @@ const getTotalQuantity = (item) => {
             <p
               class="h-fit text-end"
               v-text="
-                item.sku[0].skusale[0].unit_cost_price.toLocaleString('en-NG', {
+                item.sku[0].skusale[0]?.unit_cost_price?.toLocaleString('en-NG', {
                   style: 'currency',
                   currency: 'NGN',
-                })
+                }) || '₦0.00'
               "
             ></p>
           </td>
@@ -301,10 +301,10 @@ const getTotalQuantity = (item) => {
             <p
               class="h-fit text-end"
               v-text="
-                item.sku[0].skusale[0].unit_amount.toLocaleString('en-NG', {
+                item.sku[0]?.skusale[0]?.unit_amount?.toLocaleString('en-NG', {
                   style: 'currency',
                   currency: 'NGN',
-                })
+                }) || '₦0.00'
               "
             ></p>
           </td>
@@ -312,15 +312,15 @@ const getTotalQuantity = (item) => {
             <p
               class="h-fit text-end"
               v-text="
-                item.sku[0].skusale[0].whole_sale_amount.toLocaleString('en-NG', {
+                item.sku[0]?.skusale[0]?.whole_sale_amount?.toLocaleString('en-NG', {
                   style: 'currency',
                   currency: 'NGN',
-                })
+                }) || '₦0.00'
               "
             ></p>
           </td>
           <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-            <p class="h-fit text-end" v-text="getTotalQuantity(item.sku).toLocaleString()"></p>
+            <p class="h-fit text-end" v-text="(getTotalQuantity(item.sku) || 0).toLocaleString()"></p>
           </td>
           <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
             <div class="flex flex-row gap-2 items-center">
@@ -329,7 +329,8 @@ const getTotalQuantity = (item) => {
           </td>
           <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
             <div class="flex flex-row gap-2 items-center">
-              <p class="h-fit" v-text="item.times_sold.toLocaleString()"></p>
+              <!-- <p class="h-fit" v-text="item.times_sold.toLocaleString()"></p> -->
+              <p class="h-fit" v-text="(item.times_sold || 0).toLocaleString()"></p>
             </div>
           </td>
           <td class="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-500">

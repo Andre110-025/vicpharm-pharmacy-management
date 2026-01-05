@@ -14,6 +14,7 @@ import IconIOS from './IconIOS.vue'
 import IconDesktop from './IconDesktop.vue'
 import IconAndroid from './IconAndroid.vue'
 import IconDownloadBtn from './IconDownloadBtn.vue'
+import { db } from '@/db'
 
 const { canInstall, installApp, isInstalled } = usePWAInstall()
 const isMobile = ref(window.innerWidth < 450)
@@ -84,38 +85,101 @@ const topCustomers = ref([])
 const slowestSelling = ref([])
 const stockBrand = ref([])
 
+const applyDataToState = (data) => {
+  if (!data) return
+  metrics.sales = data.sales_spent
+  metrics.cost = data.sales_spent - data.profit
+  metrics.profit = data.profit
+  metrics.inStock = data.inventory_summary?.total_in_stock || 0
+  metrics.stockValue = data.inventory_summary?.value_of_stock || 0
+  topCustomers.value = data.customer_spent || []
+  topSelling.value = data.top_sold_products || []
+  slowestSelling.value = data.least_sold_products || []
+  lowStock.value = data.low_quantity_stock || []
+  stockBrand.value = data.stock_by_brand || []
+  orderData.value = data.order_summary
+  revenueProfitData.value = data.revenue_profit
+}
+
 const getMetrics = async () => {
   console.log('called')
-  try {
-    // Reset loading states
-    isLoading.value = true
+  isLoading.value = true
 
-    // Fetch analytics data
+  // Try to load cached data FIRST
+  try {
+    const cached = await db.dashboard_cache.get('current')
+    if (cached) {
+      console.log('Found cache, loading immediately')
+      applyDataToState(cached.data)
+      isLoading.value = false // Stop loader so user sees old data while we fetch fresh
+    }
+  } catch (e) {
+    console.warn("No dashboard cache found yet")
+  }
+
+  // FETCH FRESH DATA
+  try {
     const response = await axios.post('getCustomersAnalytics', dateRangeDate)
 
     if (response.status == 201) {
-      console.log(response)
       const data = response.data
-      metrics.sales = data.sales_spent
-      metrics.cost = data.sales_spent - data.profit
-      metrics.profit = data.profit
-      metrics.inStock = data.inventory_summary.total_in_stock
-      metrics.stockValue = data.inventory_summary.value_of_stock
-      topCustomers.value = data.customer_spent
-      topSelling.value = data.top_sold_products
-      slowestSelling.value = data.least_sold_products
-      lowStock.value = data.low_quantity_stock
-      stockBrand.value = data.stock_by_brand
-      orderData.value = data.order_summary
-      revenueProfitData.value = data.revenue_profit
+      applyDataToState(data)
+      
+      // Save fresh data back to cache
+      await db.dashboard_cache.put({ id: 'current', data: data })
+      console.log('Dashboard cache updated!')
+      
       isLoading.value = false
     }
   } catch (error) {
     console.error('Error fetching metrics:', error)
-    // Handle error state
     isLoading.value = false
   }
 }
+
+// const getMetrics = async () => {
+//   console.log('called')
+//   try {
+//     // Reset loading states
+//     isLoading.value = true
+
+//     try {
+//       const cached = await db.dashboard_cache.get('current')
+//       if (cached) {
+//         console.log('Found cache, loading immediately')
+//         applyDataToState(cached.data)
+//         isLoading.value = false // Stop loader so user sees old data while we fetch fresh
+//       }
+//     } catch (e) {
+//       console.warn('No dashboard cache found yet')
+//     }
+
+//     // Fetch analytics data
+//     const response = await axios.post('getCustomersAnalytics', dateRangeDate)
+
+//     if (response.status == 201) {
+//       console.log(response)
+//       const data = response.data
+//       metrics.sales = data.sales_spent
+//       metrics.cost = data.sales_spent - data.profit
+//       metrics.profit = data.profit
+//       metrics.inStock = data.inventory_summary.total_in_stock
+//       metrics.stockValue = data.inventory_summary.value_of_stock
+//       topCustomers.value = data.customer_spent
+//       topSelling.value = data.top_sold_products
+//       slowestSelling.value = data.least_sold_products
+//       lowStock.value = data.low_quantity_stock
+//       stockBrand.value = data.stock_by_brand
+//       orderData.value = data.order_summary
+//       revenueProfitData.value = data.revenue_profit
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching metrics:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
 
 const handleDateRangeChange = (range) => {
   // console.log(range)

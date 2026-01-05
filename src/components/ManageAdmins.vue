@@ -10,6 +10,7 @@ import AdminTable from './AdminTable.vue'
 import { useModal } from 'vue-final-modal'
 import PopUpCreateAdmin from './PopUpCreateAdmin.vue'
 import { useUserStore } from '@/stores/user'
+import { db } from '@/db'
 
 const { privileges } = useUserStore()
 
@@ -25,24 +26,162 @@ const searchTerm = ref('')
 
 const administrationList = ref(null)
 
+// const getAdministrationList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     administrationList.value = null
+
+//     const response = await axios.get(`getStoreStaffByOwner?search=${searchTerm.value}&page=${page}`)
+
+//     if (response.data.success) {
+//       administrationList.value = response.data['all Staffs']
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching Date:', error)
+//     isLoading.value = false
+//   }
+
+//   // console.log(administrationList.value)
+// }
+
 const getAdministrationList = async (page = 1) => {
   try {
     isLoading.value = true
-    administrationList.value = null
 
+    // Attempt the network request
     const response = await axios.get(`getStoreStaffByOwner?search=${searchTerm.value}&page=${page}`)
 
     if (response.data.success) {
-      administrationList.value = response.data['all Staffs']
+      const result = response.data['all Staffs']
+      administrationList.value = result
+
+      // --- ONLINE: SYNC CACHE ---
+      if (result.data && result.data.length > 0) {
+        const cleanData = JSON.parse(JSON.stringify(result.data))
+
+        const dataToSave = cleanData.map((item, index) => ({
+          ...item,
+          // Match 'id' and 'username' from your db.js schema
+          id: item.id || `staff-${index}-${Date.now()}`,
+          username: item.username || item.name || 'Unknown',
+        }))
+
+        try {
+          // Clear + BulkPut: The "Golden Standard" for staff lists
+          // Ensures deleted staff are removed from offline view
+          await db.admin.clear()
+          await db.admin.bulkPut(dataToSave)
+        } catch (dexieErr) {
+          console.error('Dexie Staff Sync Error:', dexieErr)
+        }
+      }
+
       isLoading.value = false
     }
   } catch (error) {
-    console.error('Error fetching Date:', error)
+    // --- OFFLINE / TIMEOUT FALLBACK ---
+    const isOffline = error.isViewOnly || error.isOfflineHandled || !navigator.onLine
+
+    if (isOffline) {
+      console.log('🌐 Connection Issue: Loading Staff list from cache...')
+
+      let localData = await db.admin.toArray()
+
+      // Local Search Filter
+      if (searchTerm.value) {
+        const s = searchTerm.value.toLowerCase().trim()
+        localData = localData.filter((item) => {
+          const username = String(item.username || '').toLowerCase()
+          const name = String(item.name || item.full_name || '').toLowerCase()
+          const email = String(item.email || '').toLowerCase()
+          return username.includes(s) || name.includes(s) || email.includes(s)
+        })
+      }
+
+      administrationList.value = {
+        data: localData,
+        current_page: 1,
+        last_page: 1,
+        total: localData.length,
+      }
+
+      isLoading.value = false
+      return
+    }
+
+    console.error('Error fetching Administration Data:', error)
     isLoading.value = false
   }
-
-  // console.log(administrationList.value)
 }
+
+// const getAdministrationList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+
+//     // --- 1. OFFLINE LOGIC ---
+//     if (!navigator.onLine) {
+//       console.log('Offline: Loading Staff list from cache...')
+
+//       let localData = await db.admin.toArray()
+
+//       // Local Search Filter (Username, Email, or Full Name)
+//       if (searchTerm.value) {
+//         const s = searchTerm.value.toLowerCase()
+//         localData = localData.filter(
+//           (item) =>
+//             (item.username && item.username.toLowerCase().includes(s)) ||
+//             (item.name && item.name.toLowerCase().includes(s)) ||
+//             (item.email && item.email.toLowerCase().includes(s)),
+//         )
+//       }
+
+//       administrationList.value = {
+//         data: localData,
+//         current_page: 1,
+//         last_page: 1,
+//         total: localData.length,
+//       }
+
+//       isLoading.value = false
+//       return
+//     }
+
+//     // --- 2. ONLINE FETCH ---
+//     const response = await axios.get(`getStoreStaffByOwner?search=${searchTerm.value}&page=${page}`)
+
+//     if (response.data.success) {
+//       const result = response.data['all Staffs']
+//       administrationList.value = result
+
+//       // --- 3. CACHE SYNC ---
+//       if (result.data && result.data.length > 0) {
+//         const cleanData = JSON.parse(JSON.stringify(result.data))
+
+//         const dataToSave = cleanData.map((item, index) => ({
+//           ...item,
+//           // Match 'id' and 'username' from your db.js schema
+//           id: item.id || `staff-${index}-${Date.now()}`,
+//           username: item.username || item.name,
+//         }))
+
+//         try {
+//           // We clear and put because if a staff member is fired/removed,
+//           // we don't want them showing up in the offline list.
+//           await db.admin.clear()
+//           await db.admin.bulkPut(dataToSave)
+//         } catch (dexieErr) {
+//           console.error('Dexie Staff Sync Error:', dexieErr)
+//         }
+//       }
+
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching Data:', error)
+//     isLoading.value = false
+//   }
+// }
 
 let delaySearch = null
 watch(searchTerm, (newValue) => {

@@ -19,6 +19,7 @@ import PopUpBulkProduct from './PopUpBulkProduct.vue'
 // import InventoryList from './InventoryList.vue'
 // import InventoryRecords from './InventoryRecords.vue'
 import { useModal } from 'vue-final-modal'
+import { db } from '@/db'
 
 const { user, privileges } = useUserStore()
 const isLoading = ref(false)
@@ -57,22 +58,111 @@ const applyFilters = () => {
   getInventoryList()
 }
 
+// const getInventoryList = async (page = 1) => {
+//   try {
+//     isLoading.value = true
+//     inventory.value = null
+//     //searchSellingProductByOwner/owner?search=dangote&page=1
+//     const response = await axios.post(
+//       `searchSellingProductByOwner/${user.userType}?branch=${user.branchId}&state=${state.value}&prescription=${prescription.value}&search=${searchTerm.value}&page=${page}`,
+//     )
+
+//     if (response.data.success) {
+//       inventory.value = response.data.products
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     console.error('Error fetching Data:', error)
+//     // Handle error state
+//     isLoading.value = false
+//   }
+// }
+
 const getInventoryList = async (page = 1) => {
   try {
     isLoading.value = true
-    inventory.value = null
-    //searchSellingProductByOwner/owner?search=dangote&page=1
+
+    // --- 1. OFFLINE LOGIC ---
+    if (!navigator.onLine) {
+      console.log('Offline: Filtering Inventory cache...')
+      
+      let localData = await db.products.toArray()
+
+      // A. Search Filter (Name or SKU)
+      if (searchTerm.value) {
+        const s = searchTerm.value.toLowerCase()
+        localData = localData.filter(item => 
+          (item.name && item.name.toLowerCase().includes(s)) || 
+          (item.sku && item.sku.toLowerCase().includes(s))
+        )
+      }
+
+      // B. Stock State Filter (expiry, low stock, out of stock)
+      if (state.value) {
+        if (state.value === 'out of stock') {
+          localData = localData.filter(item => parseInt(item.quantity) <= 0)
+        } else if (state.value === 'low stock') {
+          // Assuming 'low_stock_threshold' exists or use a default like 10
+          localData = localData.filter(item => parseInt(item.quantity) > 0 && parseInt(item.quantity) <= (item.threshold || 10))
+        } else if (state.value === 'expiry') {
+          const today = new Date()
+          const threeMonthsFromNow = new Date().setMonth(today.getMonth() + 3)
+          localData = localData.filter(item => {
+            const expiryDate = new Date(item.expiry_date).getTime()
+            return expiryDate <= threeMonthsFromNow
+          })
+        }
+      }
+
+      // C. Prescription Filter
+      if (prescription.value === 'true') {
+        localData = localData.filter(item => item.prescription == 1 || item.prescription === true)
+      }
+
+      inventory.value = {
+        data: localData,
+        current_page: 1,
+        last_page: 1,
+        total: localData.length
+      }
+      
+      isLoading.value = false
+      return
+    }
+
+    // --- 2. ONLINE FETCH ---
     const response = await axios.post(
       `searchSellingProductByOwner/${user.userType}?branch=${user.branchId}&state=${state.value}&prescription=${prescription.value}&search=${searchTerm.value}&page=${page}`,
     )
 
     if (response.data.success) {
-      inventory.value = response.data.products
+      const result = response.data.products
+      inventory.value = result
+
+      // --- 3. CACHE SYNC ---
+      if (result.data && result.data.length > 0) {
+        const cleanData = JSON.parse(JSON.stringify(result.data))
+
+        const dataToSave = cleanData.map((item, index) => ({
+          ...item,
+          // Ensure field name matches your db.js schema (name vs product_name)
+          id: item.id || `prod-${index}-${Date.now()}`,
+          name: item.name || item.product_name 
+        }))
+
+        try {
+          // clear() is usually better for Inventory so we don't show deleted products
+          await db.products.clear()
+          await db.products.bulkPut(dataToSave)
+        } catch (dexieErr) {
+          console.error('Dexie Error:', dexieErr)
+        }
+      }
+
       isLoading.value = false
     }
   } catch (error) {
     console.error('Error fetching Data:', error)
-    // Handle error state
     isLoading.value = false
   }
 }

@@ -1,4 +1,5 @@
 <script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import IconDashboard from './IconDashboard.vue'
 import IconCustomers from './IconCustomers.vue'
 import IconIncome from './IconIncome.vue'
@@ -11,9 +12,62 @@ import IconActivityLog from './IconActivityLog.vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import IconProfile from './IconProfile.vue'
+import IconNoInternet from './IconNoInternet.vue'
+import IconInternetDey from './IconInternetDey.vue'
 
 const userStore = useUserStore()
 const { user, privileges } = storeToRefs(userStore)
+
+const isOnline = ref(navigator.onLine)
+let heartbeatInterval = null
+
+// The "Ping" function
+const checkActualConnectivity = async () => {
+  // If the browser thinks we're offline, don't even bother pinging
+  if (!navigator.onLine) {
+    isOnline.value = false
+    return
+  }
+
+  try {
+    // We fetch a tiny resource. Using a cache-buster (?t=...) 
+    // is critical so the browser doesn't lie to us from cache.
+    const response = await fetch("https://google.com/favicon.ico", { 
+      mode: 'no-cors', 
+      cache: 'no-store' 
+    });
+    
+    // If fetch succeeds, we are definitely online
+    isOnline.value = true
+  } catch (error) {
+    // If fetch fails but navigator.onLine is true, it's "Lie-Fi"
+    isOnline.value = false
+  }
+}
+
+const handleStatusChange = () => {
+  // Immediate update based on browser event
+  isOnline.value = navigator.onLine
+  // Then verify with a ping
+  checkActualConnectivity()
+}
+
+onMounted(() => {
+  window.addEventListener('online', handleStatusChange)
+  window.addEventListener('offline', handleStatusChange)
+
+  // Initial check on load
+  checkActualConnectivity()
+
+  // Set up the heartbeat: Ping every 30 seconds to catch silent drops
+  heartbeatInterval = setInterval(checkActualConnectivity, 30000)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('online', handleStatusChange)
+  window.removeEventListener('offline', handleStatusChange)
+  if (heartbeatInterval) clearInterval(heartbeatInterval)
+})
 </script>
 
 <template>
@@ -68,16 +122,48 @@ const { user, privileges } = storeToRefs(userStore)
         Settings
       </RouterLink>
 
-      <div class="pt-2.5 flex flex-row gap-2.5">
+      <div class="pt-2.5 flex flex-row justify-between items-center">
         <div>
           <p v-text="user.userInfo?.full_name"></p>
           <RouterLink :to="{ name: 'Profile' }" class="text-mainColor"> Profile </RouterLink>
+        </div>
+        <div>
+          <div
+            title="No internet connection"
+            v-if="!isOnline"
+            class="flex justify-center ml-3.5 mt-3.5 bg-red-200 rounded-full p-1 w-[40px]"
+          >
+            <IconNoInternet class="text-red-500" />
+          </div>
+          <div
+            title="Internet access"
+            v-else
+            class="flex justify-center ml-3.5 mt-3.5 bg-green-200 rounded-full p-1 w-[40px]"
+          >
+            <IconInternetDey class="text-green-500 w-5 h-5" />
+          </div>
         </div>
       </div>
     </div>
   </aside>
 
   <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 lg:hidden">
+    <div class="absolute left-[150px] bottom-[49px]">
+      <div
+        title="No internet connection"
+        v-if="!isOnline"
+        class="flex justify-center ml-3.5 mt-3.5 bg-red-200 rounded-full p-1 w-[40px]"
+      >
+        <IconNoInternet class="text-red-500" />
+      </div>
+      <div
+        title="Internet access"
+        v-else
+        class="flex justify-center ml-3.5 mt-3.5 bg-green-200 rounded-full p-1 w-[40px]"
+      >
+        <IconInternetDey class="text-green-500 w-5 h-5" />
+      </div>
+    </div>
     <div class="flex overflow-x-auto py-3 px-4 space-x-6 hide-scrollbar">
       <RouterLink
         v-if="privileges.can_view_analytics"

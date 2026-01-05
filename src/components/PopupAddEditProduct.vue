@@ -12,6 +12,7 @@ import { useUserStore } from '@/stores/user'
 import IconDelete from './IconDelete.vue'
 import useVuelidate from '@vuelidate/core'
 import { required, minValue } from '@vuelidate/validators'
+import { db } from '@/db'
 
 const { user } = useUserStore()
 
@@ -34,21 +35,61 @@ const productCategoryList = ref([])
 const selectedCategory = ref(props.edit ? props.productItem.category : null)
 const isLoading = ref(false)
 
+// const getProductCategory = async () => {
+//   try {
+//     isLoading.value = true
+//     const { data, status } = await axios.get('getProductCategory')
+//     if (status === 202 && data.success) {
+//       productCategoryList.value = data['all category']
+//     } else {
+//       toast.error('Failed to fetch product categories', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+//     }
+//   } catch (error) {
+//     toast.error('An error occurred while fetching product categories', {
+//       position: toast.POSITION.TOP_CENTER,
+//     })
+//   } finally {
+//     isLoading.value = false
+//   }
+// }
+
 const getProductCategory = async () => {
   try {
     isLoading.value = true
-    const { data, status } = await axios.get('getProductCategory')
-    if (status === 202 && data.success) {
-      productCategoryList.value = data['all category']
-    } else {
-      toast.error('Failed to fetch product categories', {
-        position: toast.POSITION.TOP_CENTER,
-      })
+
+    // 1. Get from local cache
+    const localCategories = await db.categories.toArray()
+    if (localCategories.length > 0) {
+      productCategoryList.value = localCategories
+    }
+
+    // 2. Refresh from server if online
+    if (navigator.onLine) {
+      const { data, status } = await axios.get('getProductCategory')
+
+      if (status === 202 && data.success) {
+        const rawCategories = data['all category']
+
+        // CLEANING STEP:
+        // Ensure every category object has the key defined in your db.js
+        // If your db.js uses 'id', but API doesn't provide it, we create it.
+        const cleanCategories = rawCategories.map((cat, index) => ({
+          id: cat.id || index + 1, // Fallback if id is missing
+          name: cat.name,
+        }))
+
+        productCategoryList.value = cleanCategories
+
+        // Update local cache
+        await db.categories.clear()
+        // Use the cleaned data
+        await db.categories.bulkAdd(JSON.parse(JSON.stringify(cleanCategories)))
+      }
     }
   } catch (error) {
-    toast.error('An error occurred while fetching product categories', {
-      position: toast.POSITION.TOP_CENTER,
-    })
+    console.error('Category fetch error:', error)
   } finally {
     isLoading.value = false
   }
@@ -222,6 +263,82 @@ const addNewProduct = async () => {
   try {
     isLoading.value = true
 
+    if (!navigator.onLine) {
+      console.log('Offline: Saving product to local queue...')
+
+      // Create a clean, non-reactive object for Dexie
+      const cleanProductData = JSON.parse(JSON.stringify(productData))
+      const tempId = props.edit ? productData.id : `temp-prod-${Date.now()}`
+
+      // A. Add to Sync Queue
+      await db.syncQueue.add({
+        endpoint: 'addproduct',
+        method: 'POST',
+        payload: cleanProductData,
+        timestamp: Date.now(),
+        type: props.edit ? 'UPDATE_PRODUCT' : 'ADD_PRODUCT',
+      })
+
+      // B. Optimistic Update: Update the local products table
+      // so it shows up in search immediately
+      // const productForSearch = {
+      //   ...cleanProductData,
+      //   id: tempId,
+      //   sku: [
+      //     {
+      //       id: productData.sku_id || `temp-sku-${Date.now()}`,
+      //       purchase_unit_type: productData.purchase_unit_type,
+      //       productbranch: [
+      //         {
+      //           qty_remaining_by_lowest: productData.purchased_unit_qty,
+      //         },
+      //       ],
+      //       skusale: [
+      //         {
+      //           unit_amount: productData.unit_amount,
+      //           whole_sale_amount: productData.whole_sale_amount,
+      //           unit_cost_price: productData.unit_cost_price,
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // }
+      const productForSearch = {
+        ...cleanProductData,
+        id: tempId,
+        times_sold: 0, // Add this default
+        active: 1, // Add this default
+        sku: [
+          {
+            id: productData.sku_id || `temp-sku-${Date.now()}`,
+            purchase_unit_type: productData.purchase_unit_type,
+            expiry_date: productData.expiry_date, // Ensure this is here for the formatter
+            productbranch: [
+              {
+                qty_remaining_by_lowest: Number(productData.purchased_unit_qty),
+              },
+            ],
+            skusale: [
+              {
+                unit_amount: Number(productData.unit_amount),
+                whole_sale_amount: Number(productData.whole_sale_amount),
+                unit_cost_price: Number(productData.unit_cost_price),
+              },
+            ],
+          },
+        ],
+      }
+
+      await db.products.put(JSON.parse(JSON.stringify(productForSearch)))
+
+      toast.info('Product saved offline. It will sync when online.', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+
+      emits('confirm', true)
+      return
+    }
+
     const { data, status } = await axios.post('addproduct', productData)
     // console.log(status, data)
 
@@ -260,6 +377,133 @@ const addNewProduct = async () => {
     isLoading.value = false
   }
 }
+
+// const addNewProduct = async () => {
+//   productData.product_type = productData.category
+//   productData.sale_unit_type = productData.purchase_unit_type
+//   productData.sale_unit_parent = productData.purchase_unit_type
+//   productData.addProduct.branch[0].qty_to_assign = productData.purchased_unit_qty
+
+//   const isFormCorrect = await v$.value.$validate()
+//   if (!isFormCorrect) return
+
+//   try {
+//     isLoading.value = true
+
+//     if (!navigator.onLine) {
+//       console.log('Offline: Saving product to local queue...')
+
+//       // Create a clean, non-reactive object for Dexie
+//       const cleanProductData = JSON.parse(JSON.stringify(productData))
+//       const tempId = props.edit ? productData.id : `temp-prod-${Date.now()}`
+
+//       // A. Add to Sync Queue
+//       await db.syncQueue.add({
+//         endpoint: 'addproduct',
+//         method: 'POST',
+//         payload: cleanProductData,
+//         timestamp: Date.now(),
+//         type: props.edit ? 'UPDATE_PRODUCT' : 'ADD_PRODUCT',
+//       })
+
+//       // B. Optimistic Update: Update the local products table
+//       // so it shows up in search immediately
+//       // const productForSearch = {
+//       //   ...cleanProductData,
+//       //   id: tempId,
+//       //   sku: [
+//       //     {
+//       //       id: productData.sku_id || `temp-sku-${Date.now()}`,
+//       //       purchase_unit_type: productData.purchase_unit_type,
+//       //       productbranch: [
+//       //         {
+//       //           qty_remaining_by_lowest: productData.purchased_unit_qty,
+//       //         },
+//       //       ],
+//       //       skusale: [
+//       //         {
+//       //           unit_amount: productData.unit_amount,
+//       //           whole_sale_amount: productData.whole_sale_amount,
+//       //           unit_cost_price: productData.unit_cost_price,
+//       //         },
+//       //       ],
+//       //     },
+//       //   ],
+//       // }
+//       const productForSearch = {
+//         ...cleanProductData,
+//         id: tempId,
+//         times_sold: 0, // Add this default
+//         active: 1, // Add this default
+//         sku: [
+//           {
+//             id: productData.sku_id || `temp-sku-${Date.now()}`,
+//             purchase_unit_type: productData.purchase_unit_type,
+//             expiry_date: productData.expiry_date, // Ensure this is here for the formatter
+//             productbranch: [
+//               {
+//                 qty_remaining_by_lowest: Number(productData.purchased_unit_qty),
+//               },
+//             ],
+//             skusale: [
+//               {
+//                 unit_amount: Number(productData.unit_amount),
+//                 whole_sale_amount: Number(productData.whole_sale_amount),
+//                 unit_cost_price: Number(productData.unit_cost_price),
+//               },
+//             ],
+//           },
+//         ],
+//       }
+
+//       await db.products.put(JSON.parse(JSON.stringify(productForSearch)))
+
+//       toast.info('Product saved offline. It will sync when online.', {
+//         position: toast.POSITION.TOP_CENTER,
+//       })
+
+//       emits('confirm', true)
+//       return
+//     }
+
+//     const { data, status } = await axios.post('addproduct', productData)
+//     // console.log(status, data)
+
+//     if (status === 201 && !data.errors && data.Product !== 'null') {
+//       if (props.edit) {
+//         toast.success('Product Updated Successfully', {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       } else {
+//         toast.success('Product Added Successfully', {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       }
+
+//       emits('confirm', true)
+//     } else {
+//       if (data['save type'] && data.Product === 'null') {
+//         toast.warning(data['save type'], {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       } else if (data.errors) {
+//         toast.warning(data.errors, {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       } else {
+//         toast.error('An Error was encountered', {
+//           position: toast.POSITION.TOP_CENTER,
+//         })
+//       }
+//       isLoading.value = false
+//     }
+//   } catch (error) {
+//     toast.error('An Error was encountered while adding Stock', {
+//       position: toast.POSITION.TOP_CENTER,
+//     })
+//     isLoading.value = false
+//   }
+// }
 
 onMounted(() => {
   getProductCategory()

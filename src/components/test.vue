@@ -76,8 +76,273 @@ onMounted(() => {
     }, 3000)
   }
 })
-</script>
 
+
+
+
+// formal app.service
+// import axios from 'axios'
+// import { toast } from 'vue3-toastify'
+// import { useUserStore } from './stores/user'
+
+// Set default configs
+axios.defaults.baseURL = import.meta.env.VITE_API_URL
+axios.defaults.headers.common['Content-Type'] = 'application/json'
+axios.defaults.headers.common['Accept'] = 'application/json'
+
+// Initialize auth headers on app startup
+const initAuthHeaders = () => {
+  // Get user data from localStorage
+  const userDataString = window.localStorage.getItem('vicPharmUnique')
+
+  // Only set the Authorization header if user data exists and has a token
+  if (userDataString) {
+    try {
+      const userData = JSON.parse(userDataString)
+      if (userData?.token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`
+      } else {
+        // Clear the Authorization header if no token exists
+        delete axios.defaults.headers.common['Authorization']
+      }
+    } catch (error) {
+      console.error('Error parsing user data from localStorage:', error)
+      delete axios.defaults.headers.common['Authorization']
+    }
+  } else {
+    delete axios.defaults.headers.common['Authorization']
+  }
+}
+
+// Run initialization
+initAuthHeaders()
+
+// Add request interceptor
+axios.interceptors.request.use(
+  (config) => {
+    // Get the latest user data from localStorage on each request
+    const userDataString = window.localStorage.getItem('vicPharmUnique')
+
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString)
+        if (userData?.token) {
+          config.headers['Authorization'] = `Bearer ${userData.token}`
+        }
+      } catch (error) {
+        console.error('Error parsing user data in request interceptor:', error)
+      }
+    }
+
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  },
+)
+
+// Add Response Interceptor
+axios.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    // Handle network errors
+    if (error.message === 'Network Error') {
+      toast.error('No internet connection', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+    }
+    // Handle authentication errors
+    else if (
+      error.response?.status === 401 ||
+      error.response?.data?.message === 'Unauthenticated.'
+    ) {
+      toast.error('Session expired. Please login again', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+
+      // Get a new instance of the store
+      const userStore = useUserStore()
+      userStore.$reset()
+    }
+
+    return Promise.reject(error)
+  },
+)
+
+// export default axios
+
+
+const getIncomeList = async (page = 1) => {
+  try {
+    isLoading.value = true
+
+    // 1. Check Offline
+    if (!navigator.onLine) {
+      console.log('Offline: Loading Income from cache...')
+      
+      // Load the table list
+      const cachedIncome = await db.income.toArray()
+      
+      // Load the specific metrics object using the 'income_metrics' key
+      const cachedMetrics = await db.dashboard_cache.get('income_metrics')
+
+      if (cachedIncome.length > 0) {
+        incomeList.value = {
+          data: cachedIncome,
+          current_page: 1,
+          last_page: 1,
+          total: cachedIncome.length
+        }
+        
+        if (cachedMetrics) {
+          incomeMetrics.value = cachedMetrics.data
+        }
+        
+        isLoading.value = false
+        return
+      }
+    }
+
+    // 2. Online: Fetch from Server
+    const response = await axios.post(`incomeretuns?page=${page}`, incomeFilter)
+
+    if (response.status === 201 && response.data.success) {
+      const result = response.data.IncomeList
+      const metrics = response.data.totals
+      
+      incomeMetrics.value = metrics
+      incomeList.value = result
+
+      // 3. Update Dexie
+      if (result.data && result.data.length > 0) {
+        const rawData = JSON.parse(JSON.stringify(result.data))
+        
+        // Add IDs so Dexie doesn't crash (since we need 'id' per your schema)
+        const dataWithIds = rawData.map((item, index) => ({
+          ...item,
+          id: item.id || `inc-${index}-${Date.now()}`
+        }))
+
+        // Save the list
+        await db.income.bulkPut(dataWithIds)
+
+        // Save the totals/metrics object to your existing dashboard_cache
+        await db.dashboard_cache.put({
+          id: 'income_metrics', // This unique ID keeps it from overwriting other stats
+          data: JSON.parse(JSON.stringify(metrics))
+        })
+      }
+
+      isLoading.value = false
+    }
+  } catch (error) {
+    console.error('Error fetching income:', error)
+    isLoading.value = false
+  }
+}
+
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+const getIncomeList = async (page = 1) => {
+  try {
+    isLoading.value = true
+
+    // --- 1. OFFLINE CHECK (Only for PWA) ---
+    if (isPWA && !navigator.onLine) {
+      const cachedIncome = await db.income.toArray()
+      const cachedMetrics = await db.dashboard_cache.get('income_metrics')
+
+      if (cachedIncome.length > 0) {
+        incomeList.value = { data: cachedIncome, current_page: 1, last_page: 1 }
+        if (cachedMetrics) incomeMetrics.value = cachedMetrics.data
+        isLoading.value = false
+        return
+      }
+    }
+
+    // --- 2. REGULAR FETCH ---
+    const response = await axios.post(`incomeretuns?page=${page}`, incomeFilter)
+
+    if (response.status === 201 && response.data.success) {
+      incomeMetrics.value = response.data.totals
+      incomeList.value = response.data.IncomeList
+
+      // --- 3. CACHE ONLY IF PWA ---
+      if (isPWA && response.data.IncomeList.data) {
+        const rawData = JSON.parse(JSON.stringify(response.data.IncomeList.data))
+        
+        // Save to Dexie
+        const dataWithIds = rawData.map((item, index) => ({
+          ...item,
+          id: item.id || `inc-${index}-${Date.now()}`
+        }))
+        
+        await db.income.bulkPut(dataWithIds)
+        await db.dashboard_cache.put({
+          id: 'income_metrics',
+          data: JSON.parse(JSON.stringify(response.data.totals))
+        })
+      }
+    }
+    isLoading.value = false
+  } catch (error) {
+    console.error('Error:', error)
+    isLoading.value = false
+  }
+}
+
+// src/composables/usePwa.js)
+import { ref } from 'vue'
+
+export function usePwa() {
+  // Check if it's running as a standalone app (PWA)
+  const isPwa = ref(
+    window.matchMedia('(display-mode: standalone)').matches || 
+    window.navigator.standalone === true
+  )
+
+  // Internet Status
+  const isOnline = ref(window.navigator.onLine)
+  
+  window.addEventListener('online', () => (isOnline.value = true))
+  window.addEventListener('offline', () => (isOnline.value = false))
+
+  // The Magic Logic: Only allow offline mode IF it is a PWA
+  const shouldShowOffline = () => {
+    return isPwa.value && !isOnline.value
+  }
+
+  return { isPwa, isOnline, shouldShowOffline }
+}
+
+import { usePwa } from '@/composables/usePwa'
+const { isPwa, isOnline, shouldShowOffline } = usePwa()
+
+const getTopCustomerList = async (page = 1) => {
+  try {
+    isLoading.value = true
+
+    // GLOBAL GUARD: Only run offline logic if it's a PWA AND offline
+    if (shouldShowOffline()) {
+       console.log("PWA detected and Offline. Running local filter...")
+       // ... your offline filter logic here ...
+       return 
+    }
+
+    // NORMAL BROWSER behavior or PWA while Online
+    const response = await axios.post(...)
+    
+    // ... rest of your code ...
+
+    // Only save to Dexie if it's a PWA
+    if (isPwa.value && response.data) {
+       await db.top_customers.bulkPut(...)
+    }
+
+  } catch (error) { ... }
+}
 <template>
   <div v-if="showSplash" class="splash-screen">
     <img src="/your-gif.gif" alt="Loading" />
@@ -86,4 +351,16 @@ onMounted(() => {
   <div v-else>
     <RouterView />
   </div>
+
+  <a
+  class="flex flex-row gap-2 rounded-md px-5 py-2.5 text-sm border-gray-400 text-black transition secondaryBtn justify-center items-center"
+  :class="!navigator.onLine ? 'opacity-50 cursor-not-allowed bg-gray-200' : 'hover:bg-gray-100'"
+  ref="sales-list"
+  :type="navigator.onLine ? 'button' : ''"
+  @click="!navigator.onLine ? alert('Exporting requires an internet connection') : null"
+>
+  <IconExport class="h-4 w-4" />
+  <p class="h-fit max-md:hidden p-0 m-0">Export</p>
+</a>
+
 </template>

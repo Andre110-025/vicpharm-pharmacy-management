@@ -33,7 +33,43 @@ const handleRecordDetails = (item) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto">
+  <div class="block min-[451px]:hidden space-y-4">
+    <div
+      v-for="(item, index) in inventoryData"
+      :key="index"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.99] transition"
+    >
+      <div class="p-4 border-b border-gray-100 flex justify-between items-start">
+        <p class="font-semibold text-gray-900" v-text="item.product"></p>
+        <button
+          @click.stop="handleRecordDetails(item)"
+          class="p-1 rounded-md hover:bg-gray-100"
+          title="View Details"
+        >
+          <IconEye class="w-5 h-5" />
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-4 gap-y-4 p-4 text-sm">
+        <div class="flex flex-col">
+          <span class="text-gray-500">Record Type</span>
+          <span class="font-medium text-gray-900" v-text="item.type_of_inventory"></span>
+        </div>
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Staff Name</span>
+          <span class="font-medium text-gray-900" v-text="item.staff"></span>
+        </div>
+
+        <div class="flex flex-col col-span-2">
+          <span class="text-gray-500">Date</span>
+          <span class="font-medium text-gray-900">
+            {{ formatDateTime(item.created_at) }} | {{ formatTime(item.created_at) }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hidden min-[451px]:block w-full overflow-x-auto">
     <table class="w-full border-collapse bg-white">
       <thead class="bg-gray-50">
         <tr>

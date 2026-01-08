@@ -61,7 +61,82 @@ const handleComplete = (item) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto" @click="closeDropdown">
+  <div class="block min-[451px]:hidden space-y-4">
+    <div
+      v-for="(item, index) in sales"
+      :key="index"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.99] transition"
+    >
+      <div class="p-4 border-b border-gray-100 flex justify-between items-start">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Customer Name</p>
+          <p class="text-base font-semibold text-gray-900" v-text="item.customer"></p>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            @click.stop="handleViewDetails(item)"
+            class="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition"
+            title="View Sale Details"
+          >
+            <IconEye class="w-5 h-5 text-gray-600" />
+          </button>
+
+          <button
+            v-if="
+              privileges.can_complete_sales_orders &&
+              ['pending', 'unpaid', 'partially paid'].includes(item.payment_status.toLowerCase())
+            "
+            @click.stop="handleComplete(item)"
+            class="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition"
+            title="Complete Sale"
+          >
+            <IconComplete class="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-4 gap-y-4 p-4 text-sm">
+        <div class="flex flex-col">
+          <span class="text-gray-500">Phone Number</span>
+          <span class="font-medium text-gray-900" v-text="item.customer_number"></span>
+        </div>
+
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Balance Due</span>
+          <span
+            class="font-medium text-green-600"
+            v-text="
+              (item.total_amount - item.amount_paid).toLocaleString('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+              })
+            "
+          ></span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Sale Date & Time</span>
+          <span class="font-medium text-gray-900">
+            {{ formatDateTime(item.created_at) }} | {{ formatTime(item.created_at) }}
+          </span>
+        </div>
+
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Payment Due Date</span>
+          <span
+            class="font-medium text-gray-900"
+            v-text="item.due_date ? formatDateTime(item.due_date) : 'No Due Date'"
+          ></span>
+        </div>
+      </div>
+
+      <div v-if="!sales.length" class="text-center py-10 text-sm text-gray-500">
+        No Credit sales record found.
+      </div>
+    </div>
+  </div>
+  <div class="hidden min-[451px]:block w-full overflow-x-auto" @click="closeDropdown">
     <table class="w-full border-collapse bg-white">
       <thead class="bg-gray-50">
         <tr>

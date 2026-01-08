@@ -87,7 +87,65 @@ const deleteUser = async (id) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto">
+  <div class="block min-[451px]:hidden space-y-4">
+    <div
+      v-for="(data, index) in adminData"
+      :key="index"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.99] transition"
+    >
+      <div class="p-4 border-b border-gray-100 flex justify-between items-start">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Admin Name</p>
+          <p class="text-base font-semibold text-gray-900 capitalize" v-text="data.full_name"></p>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            @click="openEditUser(data)"
+            class="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition"
+            title="Edit Role"
+            v-if="privileges.change_staff_position"
+          >
+            <IconNotePad class="w-5 h-5 text-gray-600" />
+          </button>
+          <button
+            @click="openDeleteUser(data.id)"
+            class="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition"
+            title="Delete User"
+            v-if="privileges.add_delete_staff"
+          >
+            <IconDelete class="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-4 gap-y-4 p-4 text-sm">
+        <div class="flex flex-col">
+          <span class="text-gray-500">Email</span>
+          <span class="font-medium text-gray-900 truncate" v-text="data.email"></span>
+        </div>
+
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Date Added</span>
+          <span class="font-medium text-gray-900">
+            {{ formatDateTime(data.created_at) }} | {{ formatTime(data.created_at) }}
+          </span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Role</span>
+          <span class="font-medium text-gray-900 capitalize" v-text="data.user_type"></span>
+        </div>
+
+        <div></div>
+      </div>
+
+      <div v-if="!adminData.length" class="text-center py-10 text-sm text-gray-500">
+        No Admin found.
+      </div>
+    </div>
+  </div>
+  <div class="hidden min-[451px]:block w-full overflow-x-auto">
     <table class="w-full border-collapse bg-white">
       <thead class="bg-gray-50">
         <tr>

@@ -182,7 +182,155 @@ const getTotalQuantity = (item) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto">
+  <div class="block min-[451px]:hidden space-y-4">
+    <div
+      v-for="(item, index) in inventoryData"
+      :key="index"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.99] transition"
+    >
+      <div class="p-4 border-b border-gray-100 flex justify-between items-start">
+        <div class="flex flex-row gap-2 items-center">
+          <img
+            v-if="item.product_image"
+            :src="item.product_image"
+            :alt="item.product_name"
+            class="w-6 h-6 object-contain bg-gray-400 rounded"
+          />
+          <IconImage v-else class="w-6 h-6" />
+          <p class="font-semibold text-gray-900" v-text="item.product_name"></p>
+        </div>
+        <div class="flex space-x-2">
+          <button
+            @click="openEditProduct(item)"
+            class="p-1 rounded-md hover:bg-gray-100"
+            title="Edit Product"
+            v-if="privileges.can_edit_products_details"
+          >
+            <IconNotePad class="w-6 h-6" />
+          </button>
+          <button
+            @click="openAddStock(item)"
+            class="p-1 rounded-md hover:bg-gray-100"
+            title="Add to product"
+            v-if="privileges.can_add_new_sku"
+          >
+            <IconRestock class="w-6 h-6" :color="'#000'" />
+          </button>
+          <button
+            @click="openUpdatePrice(item)"
+            class="p-1 rounded-md hover:bg-gray-100"
+            title="Update Price"
+            v-if="privileges.can_edit_products_details"
+          >
+            <IconPrice class="w-6 h-6" />
+          </button>
+          <button
+            @click="ProductActivateDeactivate(item, item.active ? 'deactivate' : 'activate')"
+            class="p-1 rounded-md hover:bg-gray-100"
+            :title="item.active ? 'Deactivate Product' : 'Activate Product'"
+            v-if="privileges.can_deactivate_products"
+          >
+            <IconToggle class="w-6 h-6" :active="item.active" />
+          </button>
+          <button v-if="false" class="p-1 rounded-md hover:bg-gray-100" title="View product info">
+            <IconEye />
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-4 gap-y-4 p-4 text-sm">
+        <div class="flex flex-col">
+          <span class="text-gray-500">Product Category</span>
+          <span class="font-medium text-gray-900" v-text="item.category"></span>
+        </div>
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Wholesale Price</span>
+          <span
+            class="font-medium text-green-600"
+            v-text="
+              item.sku[0]?.skusale[0]?.whole_sale_amount?.toLocaleString('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+              }) || '₦0.00'
+            "
+          ></span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Brand</span>
+          <span class="font-medium text-gray-900" v-text="item.brand"></span>
+        </div>
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Stock Left</span>
+          <span class="font-medium text-gray-900" v-text="getTotalQuantity(item.sku) || 0"></span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Cost Price</span>
+          <span
+            class="font-medium text-green-600"
+            v-text="
+              item.sku[0].skusale[0]?.unit_cost_price?.toLocaleString('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+              }) || '₦0.00'
+            "
+          ></span>
+        </div>
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Expiry Date</span>
+          <span
+            class="font-medium text-gray-900"
+            v-text="formatExpiryDate(item.sku[0].expiry_date)"
+          ></span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Retail Price</span>
+          <span
+            class="font-medium text-green-600"
+            v-text="
+              item.sku[0]?.skusale[0]?.unit_amount?.toLocaleString('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+              }) || '₦0.00'
+            "
+          ></span>
+        </div>
+        <div class="flex flex-col text-right">
+          <span class="text-gray-500">Total Orders</span>
+          <span
+            class="font-medium text-gray-900"
+            v-text="(item.times_sold || 0).toLocaleString()"
+          ></span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-gray-500">Threshold</span>
+          <span class="font-medium text-gray-900" v-text="item.threshold"></span>
+        </div>
+       <div class="flex flex-col items-end">
+  <span class="text-gray-500 text-xs">Status</span>
+
+  <span
+    class="inline-flex w-fit items-center rounded-md px-2 py-[1px] font-medium text-[.65em] capitalize"
+    :class="{
+      'bg-orange-100 text-orange-900':
+        productStatus(getTotalQuantity(item.sku), item.threshold) === 'Low Stock',
+      'bg-green-100 text-green-900':
+        productStatus(getTotalQuantity(item.sku), item.threshold) === 'In Stock',
+      'bg-red-100 text-red-900':
+        productStatus(getTotalQuantity(item.sku), item.threshold) === 'Out of Stock',
+    }"
+  >
+    {{ productStatus(getTotalQuantity(item.sku), item.threshold) }}
+  </span>
+</div>
+
+      </div>
+    </div>
+  </div>
+  <div class="hidden min-[451px]:block w-full overflow-x-auto">
     <table class="w-full border-collapse bg-white">
       <thead class="bg-gray-50">
         <tr>

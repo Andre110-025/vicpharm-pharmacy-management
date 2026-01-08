@@ -33,7 +33,35 @@ const returnFormatted = (dataTimeStr) => {
 </script>
 
 <template>
-  <div class="w-full overflow-x-auto">
+  <div class="block min-[451px]:hidden space-y-4">
+    <div
+      v-for="(data, index) in activityLogData"
+      :key="index"
+      class="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.99] transition"
+    >
+      <div class="p-4 border-b border-gray-100 flex justify-between items-start">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Admin Name</p>
+          <p class="text-base font-semibold text-gray-900" v-text="data.name"></p>
+        </div>
+
+        <div class="flex flex-col text-right">
+          <span class="text-xs text-gray-500 uppercase tracking-wide">Date Added</span>
+          <span class="font-medium text-gray-900">{{ returnFormatted(data.created_at) }}</span>
+        </div>
+      </div>
+
+      <div class="p-4 text-sm">
+        <span class="text-gray-500">Log</span>
+        <p class="font-medium text-gray-900 mt-1" v-text="data.action"></p>
+      </div>
+
+      <div v-if="!activityLogData.length" class="text-center py-10 text-sm text-gray-500">
+        No admin activities found.
+      </div>
+    </div>
+  </div>
+  <div class="hidden min-[451px]:block w-full overflow-x-auto">
     <table class="w-full border-collapse bg-white">
       <thead class="bg-gray-50">
         <tr>

@@ -208,14 +208,22 @@ const processSyncQueue = async () => {
       await db.syncQueue.delete(task.id);
       console.log(`✅ Synced ${task.type}: ${task.endpoint}`);
 
-    } catch (e) {
-      console.error(`❌ Sync failed for ${task.type} (ID: ${task.id})`, e);
-      // If it's a 404 or 400, it's a "bad request" - delete it so it doesn't block the queue
-      if (e.response?.status >= 400 && e.response?.status < 500) {
-         await db.syncQueue.delete(task.id);
-      }
-      continue; // Skip to next item
+      } catch (e) {
+      console.error(`❌ Sync failed for ${task.type}`, e.response?.data)
+
+      // 🔥 Remove it so it doesn't loop forever
+      await db.syncQueue.delete(task.id)
+
+      continue
     }
+    // } catch (e) {
+    //   console.error(`❌ Sync failed for ${task.type} (ID: ${task.id})`, e);
+    //   // If it's a 404 or 400, it's a "bad request" - delete it so it doesn't block the queue
+    //   if (e.response?.status >= 400 && e.response?.status < 500) {
+    //      await db.syncQueue.delete(task.id);
+    //   }
+    //   continue; // Skip to next item
+    // }
   }
 };
 

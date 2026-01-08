@@ -1,4 +1,55 @@
 <script>
+  function calculateExpiry(months) {
+  const now = new Date()
+  const expiry = new Date(now)
+
+  expiry.setMonth(expiry.getMonth() + Number(months))
+
+  // Optional: normalize to end of day
+  expiry.setHours(23, 59, 59, 999)
+
+  return expiry
+}
+
+function subscriptionPayment() {
+  loading.value = true
+  const paystack = new PaystackPop()
+
+  const selectedAmount = amountMap[selectedDuration.value]
+  const duration = Number(selectedDuration.value)
+
+  const expiryDate = calculateExpiry(duration)
+
+  paystack.newTransaction({
+    key: 'pk_test_68bed5e7669b41901990224f081528282093f60f',
+    email: user.userInfo.email,
+    amount: selectedAmount * 100,
+    channels: ['card', 'bank', 'ussd', 'ussd', 'qr', 'mobile_money'],
+    metadata: {
+      paymentFor: 'Subscription Renewal',
+      user_id: user.userInfo.id,
+      duration_months: duration,
+      subscription_start: new Date().toISOString(),
+      subscription_expiry: expiryDate.toISOString(), // 🔥 THIS
+    },
+    onSuccess: (transaction) => {
+      loading.value = false
+      emit('confirm')
+
+      toast.success('Payment is Successful', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+    },
+    onCancel: () => {
+      loading.value = false
+      toast.error('Payment is Cancelled', {
+        position: toast.POSITION.TOP_CENTER,
+      })
+    },
+  })
+}
+
+
 import './assets/main.css'
 import 'vue-final-modal/style.css'
 import 'vue3-toastify/dist/index.css'

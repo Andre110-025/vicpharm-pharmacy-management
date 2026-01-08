@@ -147,19 +147,19 @@ onBeforeUnmount(() => {
     </div>
   </aside>
 
-  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 lg:hidden">
-    <div class="absolute left-[150px] bottom-[49px]">
+ <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 lg:hidden">
+    <div class="absolute left-1/2 -top-5 transform -translate-x-1/2">
       <div
-        title="No internet connection"
         v-if="!isOnline"
-        class="flex justify-center ml-3.5 mt-3.5 bg-red-200 rounded-full p-1 w-[40px]"
+        title="No internet connection"
+        class="flex justify-center bg-red-200 rounded-full p-1 w-10 h-10 items-center"
       >
-        <IconNoInternet class="text-red-500" />
+        <IconNoInternet class="text-red-500 w-5 h-5" />
       </div>
       <div
-        title="Internet access"
         v-else
-        class="flex justify-center ml-3.5 mt-3.5 bg-green-200 rounded-full p-1 w-[40px]"
+        title="Internet access"
+        class="flex justify-center bg-green-200 rounded-full p-1 w-10 h-10 items-center"
       >
         <IconInternetDey class="text-green-500 w-5 h-5" />
       </div>

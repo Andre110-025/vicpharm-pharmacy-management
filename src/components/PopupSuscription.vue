@@ -7,18 +7,20 @@ import { toast } from 'vue3-toastify'
 import IconLoading from './IconLoading.vue'
 // import IconLoading from './IconLoading.vue'
 
-const { user } = useUserStore()
+const { user, notificationData } = useUserStore()
 const selectedDuration = ref('1')
 const loading = ref(false)
 const emit = defineEmits(['confirm'])
 
+const amount = notificationData.pricing_rules
+
 const amountMap = {
-  1: 3000,
-  3: 9000,
-  6: 18000,
-  12: 36000,
-  24: 72000,
-  60: 180000,
+  1: amount * 1,
+  3: amount * 3,
+  6: amount * 6,
+  12: amount * 12,
+  24: amount * 24,
+  60: amount * 60,
 }
 
 const price = computed(() => amountMap[selectedDuration.value])
@@ -37,12 +39,12 @@ function subscriptionPayment() {
   const paystack = new PaystackPop()
 
   const amountMap = {
-    1: 3000,
-    3: 9000,
-    6: 18000,
-    12: 36000,
-    24: 72000,
-    60: 180000,
+    1: amount * 1,
+    3: amount * 3,
+    6: amount * 6,
+    12: amount * 12,
+    24: amount * 24,
+    60: amount * 60,
   }
   const selectedAmount = amountMap[selectedDuration.value]
 
@@ -51,7 +53,7 @@ function subscriptionPayment() {
   const expiryDate = calculateExpiry(durationTime)
 
   paystack.newTransaction({
-    key: 'pk_test_68bed5e7669b41901990224f081528282093f60f',
+    key: 'pk_live_3396b894d515336b105dd6083d463bdba6f8ea2b',
     email: user.userInfo.email,
     amount: selectedAmount * 100,
     channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money'],

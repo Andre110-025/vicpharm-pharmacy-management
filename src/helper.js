@@ -127,5 +127,9 @@ export function useHelpers() {
     formatDate,
     formatDateTime,
     formatTime,
+    containsUppercase,
+    containsLowercase,
+    containsNumber,
+    containsSpecial,
   }
 }

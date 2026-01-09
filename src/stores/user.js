@@ -90,7 +90,7 @@
 //     // console.log(dataFetched.value, user.value.userInfo, Unauthorized.value)
 
 //     // if offline, do not attempt fetch
-//     if (!navigator.online && user.value.userInfo) { 
+//     if (!navigator.online && user.value.userInfo) {
 //       dataFetched.value = true
 //       return
 //     }
@@ -278,7 +278,6 @@
 //   import.meta.hot.accept(acceptHMRUpdate(useUserStore, import.meta.hot))
 // }
 
-
 import { reactive, ref } from 'vue'
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { useStorage } from '@vueuse/core'
@@ -307,11 +306,25 @@ export const useUserStore = defineStore('user', () => {
   //   due_payments: 0,
   // })
 
+  const regUser = useStorage('vicPharmRegUser', {
+    full_name: null,
+    email: null,
+    business_name: null,
+    phone_number: null,
+    user_type: null,
+    owner_id: 0,
+    storehive_officer: null,
+    address: null,
+    // token: null,
+    // expiry_date: null,
+  })
+
   const notificationData = useStorage('vicPharmNotifications', {
     expiring: 0,
     low_stock: 0,
     due_payments: 0,
     subscription_expiry: 0,
+    pricing_rules: 0,
   })
 
   // const privileges = ref({
@@ -337,7 +350,7 @@ export const useUserStore = defineStore('user', () => {
   //   can_create_role: false,
   // })
 
-   const privileges = useStorage('vicPharmPrivileges', {
+  const privileges = useStorage('vicPharmPrivileges', {
     can_view_analytics: false,
     can_view_income_records: false,
     can_view_products: false,
@@ -408,6 +421,7 @@ export const useUserStore = defineStore('user', () => {
           low_stock_product,
           due_date,
           subscription_expiry_date,
+          pricing,
           branch,
           account,
           role,
@@ -423,6 +437,7 @@ export const useUserStore = defineStore('user', () => {
         notificationData.value.low_stock = low_stock_product
         notificationData.value.due_payments = due_date
         notificationData.value.subscription_expiry = subscription_expiry_date
+        notificationData.value.pricing_rules = pricing
 
         const {
           created_at: created,
@@ -499,6 +514,19 @@ export const useUserStore = defineStore('user', () => {
         account: null,
       }
 
+      regUser.value = {
+        full_name: null,
+        email: null,
+        business_name: null,
+        phone_number: null,
+        user_type: null,
+        owner_id: 0,
+        storehive_officer: null,
+        address: null,
+        // token: null,
+        // expiry_date: null,
+      }
+
       privileges.value = {
         can_view_analytics: false,
         can_view_income_records: false,
@@ -525,8 +553,14 @@ export const useUserStore = defineStore('user', () => {
       // notificationData.expiring = 0
       // notificationData.low_stock = 0
       // notificationData.due_payments = 0
-      notificationData.value = { expiring: 0, low_stock: 0, due_payments: 0, subscription_expiry: 0 }
-      
+      notificationData.value = {
+        expiring: 0,
+        low_stock: 0,
+        due_payments: 0,
+        subscription_expiry: 0,
+        pricing_rules: 0,
+      }
+
       dataFetched.value = false
       Unauthorized.value = false
       resetData.userid = null

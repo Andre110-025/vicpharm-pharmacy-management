@@ -166,7 +166,189 @@ const handleSignUp = async () => {
 </script>
 
 <template>
-  <div class="h-[500px] flex items-center justify-center p-4">
+  <div class="block min-[451px]:hidden min-h-screen flex items-center justify-center p-4 -mt-[120px]">
+    <div class="w-[350px] max-w-[380px] h-[500px] overflow-y-auto mt-[80px] rounded-2xl px-6 py-8 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <form @submit.prevent="handleSignUp" class="space-y-4">
+        <div class="text-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">Sign Up</h2>
+          <p class="text-sm text-gray-500 mt-1">Create your account</p>
+        </div>
+
+        <!-- Full Name -->
+        <div>
+          <DynamicInput
+            v-model="authData.full_name"
+            label="Full Name"
+            type="text"
+            placeholder="Enter your full name"
+            @input="v$.full_name.$touch()"
+            @blur="v$.full_name.$touch()"
+          />
+          <p v-if="v$.full_name.$error" class="text-xs text-red-500 mt-1">
+            {{ v$.full_name.$errors[0].$message }}
+          </p>
+        </div>
+
+        <!-- Email -->
+        <DynamicInput
+          v-model="authData.email"
+          label="Email Address"
+          type="email"
+          placeholder="Enter your email"
+        />
+
+        <!-- Country & Phone - Stacked on mobile -->
+        <div class="space-y-3">
+          <!-- Country dropdown -->
+          <div class="relative" @click.outside="open = false">
+            <label class="block mb-1.5 text-sm font-medium text-gray-700">Country</label>
+            <button
+              type="button"
+              @click.stop="open = !open"
+              class="flex items-center gap-2 p-2.5 border-2 border-gray-200 rounded-lg bg-white w-full justify-between text-sm hover:border-gray-300 transition-colors"
+            >
+              <div class="flex items-center gap-2">
+                <img
+                  :src="`https://flagcdn.com/w20/${selectedFlag.toLowerCase()}.png`"
+                  class="w-5 h-5"
+                  alt="Flag"
+                />
+                <span>{{ selectedCode }}</span>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+
+            <!-- Dropdown - fixed positioning for mobile -->
+            <div
+              v-if="open"
+              @click.stop
+              class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-lg shadow-lg border-t border-gray-200 max-h-[60vh] overflow-y-auto"
+            >
+              <div class="p-2">
+                <div class="sticky top-0 bg-white p-2 border-b">
+                  <h3 class="font-medium">Select Country</h3>
+                </div>
+                <div class="divide-y">
+                  <button
+                    v-for="country in countries"
+                    :key="country.code"
+                    type="button"
+                    @click="selectCountry(country, $event)"
+                    class="flex items-center gap-2 w-full px-3 py-3 hover:bg-gray-100 text-sm"
+                  >
+                    <img
+                      :src="`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`"
+                      class="w-6 h-6"
+                      :alt="`${country.name} Flag`"
+                    />
+                    <span class="truncate">{{ country.dial_code }} - {{ country.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phone Number -->
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700">Phone Number</label>
+            <input
+              type="text"
+              placeholder="913 673 909"
+              class="w-full p-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mainColor focus:border-transparent text-sm transition-all"
+              v-model="authData.phone_number"
+            />
+          </div>
+        </div>
+
+        <!-- Business Name -->
+        <DynamicInput
+          v-model="authData.business_name"
+          label="Business Name"
+          type="text"
+          placeholder="Enter your business name"
+        />
+
+        <!-- SMB Officer -->
+        <DynamicInput
+          v-model="authData.storehive_officer"
+          label="SMB Officer"
+          type="text"
+          placeholder="Enter your SMB officer id"
+        />
+
+        <!-- Address -->
+        <DynamicInput
+          v-model="authData.address"
+          label="Address"
+          type="text"
+          placeholder="Enter your address"
+        />
+
+        <!-- Password -->
+        <div>
+          <DynamicInput
+            v-model="authData.password"
+            label="Password"
+            type="password"
+            placeholder="Enter your password"
+            @input="v$.password.$touch()"
+            @blur="v$.password.$touch()"
+          />
+          <ul
+            v-if="v$.password.$dirty && v$.password.$error"
+            class="text-xs text-red-500 space-y-1 mt-1"
+          >
+            <li v-for="(item, i) in v$.password.$errors" :key="i">{{ item.$message }}</li>
+          </ul>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <DynamicInput
+            v-model="authData.cPassword"
+            label="Confirm Password"
+            type="password"
+            placeholder="Confirm your password"
+            @input="v$.cPassword.$touch()"
+            @blur="v$.cPassword.$touch()"
+          />
+          <ul
+            v-if="v$.cPassword.$dirty && v$.cPassword.$error"
+            class="text-xs text-red-500 space-y-1 mt-1"
+          >
+            <li v-for="(item, i) in v$.cPassword.$errors" :key="i">{{ item.$message }}</li>
+          </ul>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          :disabled="loading || v$.$invalid"
+          class="w-full mainBtn transition duration-300 py-3 rounded-lg text-base font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+          type="submit"
+        >
+          Sign Up
+        </button>
+        
+        <p class="text-center text-xs text-gray-500 mt-4">
+          By signing up, you agree to our Terms & Conditions
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- DESKTOP VIEW -->
+  <div class="hidden min-[451px]:block h-[500px] flex items-center justify-center p-4">
     <div
       class="w-[600px] max-w-lg h-full max-h-[90vh] overflow-y-auto bg-white p-10 rounded-lg shadow-lg"
     >

@@ -149,13 +149,19 @@ onMounted(() => {
       </div>
 
       <!-- Receipt Section -->
-      <div class="bg-[#f7f8fa] flex-1 p-5 h-full rounded-tr-2xl rounded-br-2xl max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:h-auto max-[450px]:border-t max-[450px]:border-gray-200">
-        <div class="flex flex-col h-[560px] p-5 bg-white rounded-md shadow max-[450px]:h-auto max-[450px]:p-4">
+      <div
+        class="bg-[#f7f8fa] flex-1 p-5 h-full rounded-tr-2xl rounded-br-2xl max-[450px]:p-4 max-[450px]:rounded-none max-[450px]:h-auto max-[450px]:border-t max-[450px]:border-gray-200"
+      >
+        <div
+          class="flex flex-col h-[560px] p-5 bg-white rounded-md shadow max-[450px]:h-auto max-[450px]:p-4"
+        >
           <div class="flex flex-row justify-between items-center max-[450px]:items-start">
             <div class="flex flex-col gap-1">
               <h4 class="text-sm font-semibold max-[450px]:text-xs">CUSTOMER RECEIPT</h4>
               <div class="flex flex-col gap-2.5 max-[450px]:gap-1.5">
-                <p class="text-gray-500 text-sm max-[450px]:text-xs">Order {{ sales.order_code }}</p>
+                <p class="text-gray-500 text-sm max-[450px]:text-xs">
+                  Order {{ sales.order_code }}
+                </p>
                 <p class="text-gray-500 text-sm max-[450px]:text-xs">
                   {{ formatDateTime(sales.created_at) }} | {{ formatTime(sales.created_at) }}
                 </p>
@@ -168,18 +174,30 @@ onMounted(() => {
               <IconCancel color="black" class="w-5 h-5 max-[450px]:w-4 max-[450px]:h-4" />
             </button>
           </div>
-          
+
           <div
             class="mt-5 pt-2 pb-2 border-t-2 border-dotted border-gray-300 flex-1 overflow-y-auto max-[450px]:mt-3"
           >
             <!-- Table for order details -->
-            <div class="w-full overflow-x-auto">
+            <div class="hidden min-[451px]:block w-full overflow-x-auto">
               <table class="w-full border-collapse">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs">Product</th>
-                    <th class="px-4 py-2 text-right text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs">Subtotal</th>
-                    <th class="px-4 py-2 text-right text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs">Qty</th>
+                    <th
+                      class="px-4 py-2 text-left text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs"
+                    >
+                      Product
+                    </th>
+                    <th
+                      class="px-4 py-2 text-right text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs"
+                    >
+                      Subtotal
+                    </th>
+                    <th
+                      class="px-4 py-2 text-right text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs"
+                    >
+                      Qty
+                    </th>
                     <th
                       v-if="privileges.can_return_sales_orders"
                       class="px-4 py-2 text-right text-sm font-medium text-gray-900 max-[450px]:px-2 max-[450px]:py-1.5 max-[450px]:text-xs max-[450px]:hidden"
@@ -194,13 +212,17 @@ onMounted(() => {
                     :key="item.id"
                     class="border-b border-gray-100"
                   >
-                    <td class="px-4 py-3 text-sm max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs">
+                    <td
+                      class="px-4 py-3 text-sm max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs"
+                    >
                       <div class="flex flex-row items-center gap-2 max-[450px]:gap-1">
                         <IconImage class="w-8 h-8 hidden" />
                         <p class="max-[450px]:line-clamp-2">{{ item.product_name }}</p>
                       </div>
                     </td>
-                    <td class="px-4 py-3 text-sm text-right text-gray-500 max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs">
+                    <td
+                      class="px-4 py-3 text-sm text-right text-gray-500 max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs"
+                    >
                       {{
                         item.subtotal.toLocaleString('en-NG', {
                           style: 'currency',
@@ -208,7 +230,9 @@ onMounted(() => {
                         })
                       }}
                     </td>
-                    <td class="px-4 py-3 text-sm text-right text-gray-500 max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs">
+                    <td
+                      class="px-4 py-3 text-sm text-right text-gray-500 max-[450px]:px-2 max-[450px]:py-2 max-[450px]:text-xs"
+                    >
                       {{ item.qty }}
                     </td>
                     <td
@@ -226,7 +250,10 @@ onMounted(() => {
                     </td>
                   </tr>
                   <!-- Mobile return button row -->
-                  <tr v-if="privileges.can_return_sales_orders" class="hidden max-[450px]:table-row">
+                  <tr
+                    v-if="privileges.can_return_sales_orders"
+                    class="hidden max-[450px]:table-row"
+                  >
                     <td colspan="3" class="px-2 py-2">
                       <div class="flex flex-wrap gap-2">
                         <button
@@ -243,6 +270,60 @@ onMounted(() => {
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- MOBILE CARD VIEW -->
+            <div class="block min-[451px]:hidden space-y-3">
+              <div
+                v-for="item in sales.orderdetails"
+                :key="item.id"
+                class="bg-white border border-gray-200 rounded-xl p-3 shadow-sm"
+              >
+                <!-- Top row: Product + Action -->
+                <div class="flex justify-between items-start gap-4">
+                  <!-- Product -->
+                  <div class="flex flex-col gap-1">
+                    <span class="text-xs text-gray-500">Product</span>
+                    <p class="font-medium text-gray-900 text-sm leading-tight line-clamp-2">
+                      {{ item.product_name }}
+                    </p>
+                  </div>
+
+                  <!-- Action -->
+                  <div class="flex flex-col items-end gap-1">
+                    <span class="text-xs text-gray-500">Action</span>
+                    <button
+                      v-if="privileges.can_return_sales_orders"
+                      @click="handleReturnItem(item)"
+                      class="p-1 rounded-md hover:bg-gray-100"
+                      :disabled="item.qty <= 0"
+                      title="Return Item"
+                    >
+                      <IconReturn class="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2x2 grid -->
+                <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
+                  <div class="flex flex-col">
+                    <span class="text-gray-500">Subtotal</span>
+                    <span class="font-medium text-gray-900">
+                      {{
+                        item.subtotal.toLocaleString('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN',
+                        })
+                      }}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-col text-right">
+                    <span class="text-gray-500">Qty</span>
+                    <span class="font-medium text-gray-900">{{ item.qty }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Summary section -->

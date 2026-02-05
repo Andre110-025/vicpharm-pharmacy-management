@@ -16,6 +16,7 @@ db.version(2).stores({
   income: 'id, date',
   inventory: 'id, product_name',
   creditTable: 'id, customer_name',
+  expenseTable: 'id, title, amount',
   categories: 'name',
   dashboard_cache: 'id',
   syncQueue: '++id, type, endpoint, method, payload' // Generic queue

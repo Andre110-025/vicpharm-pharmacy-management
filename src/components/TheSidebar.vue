@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import IconDashboard from './IconDashboard.vue'
 import IconCustomers from './IconCustomers.vue'
 import IconIncome from './IconIncome.vue'
@@ -15,6 +15,7 @@ import IconProfile from './IconProfile.vue'
 import IconNoInternet from './IconNoInternet.vue'
 import IconInternetDey from './IconInternetDey.vue'
 import Icon3dot from './Icon3dot.vue'
+import IconExpenses from './IconExpenses.vue'
 
 const userStore = useUserStore()
 const { user, privileges } = storeToRefs(userStore)
@@ -71,6 +72,83 @@ onBeforeUnmount(() => {
 })
 
 const showMore = ref(false)
+
+const navItems = computed(() => [
+  {
+    name: 'overview',
+    label: 'Dashboard',
+    icon: IconDashboard,
+    show: privileges.value.can_view_analytics
+  },
+  {
+    name: 'Customers',
+    label: 'Customers',
+    icon: IconCustomers,
+    show: privileges.value.can_view_customers
+  },
+  {
+    name: 'Income',
+    label: 'Income',
+    icon: IconIncome,
+    show: privileges.value.can_view_income_records
+  },
+  {
+    name: 'Sales',
+    label: 'Sales',
+    icon: IconSale,
+    show: privileges.value.can_view_sales_records
+  },
+  {
+    name: 'Inventory',
+    label: 'Inventory',
+    icon: IconBox,
+    show: privileges.value.can_view_products
+  },
+  {
+    name: 'Expenses',
+    label: 'Expenses',
+    icon: IconBox,
+    show: privileges.value.can_manage_expenses,
+  },
+  {
+    name: 'Administration',
+    label: 'Administration',
+    icon: IconAdmin,
+    show: privileges.value.can_view_staff
+  },
+  {
+    name: 'ActivityLog',
+    label: 'Activity Log',
+    icon: IconActivityLog,
+    show: privileges.value.view_other_staff_activities
+  },
+  {
+    name: 'Settings',
+    label: 'Settings',
+    icon: IconSettings,
+    show: true,
+  },
+  {
+    name: 'Profile',
+    label: 'Profile',
+    icon: IconProfile,
+    show: true,
+  },
+])
+
+const visibleNavItems = computed(() => 
+  navItems.value.filter(item => item.show)
+)
+
+const ULTRA_LIMIT = 5
+
+const mainNavItems = computed(() => 
+  visibleNavItems.value.slice(0, ULTRA_LIMIT)
+)
+
+const moreNavItems = computed(() => 
+  visibleNavItems.value.slice(ULTRA_LIMIT)
+)
 </script>
 
 <template>
@@ -104,6 +182,10 @@ const showMore = ref(false)
       <RouterLink v-if="privileges.can_view_products" :to="{ name: 'Inventory' }" class="dashNav">
         <IconBox class="" />
         Inventory
+      </RouterLink>
+      <RouterLink v-if="privileges.can_manage_expenses" :to="{ name: 'Expenses' }" class="dashNav">
+        <IconExpenses class="" />
+        Expenses
       </RouterLink>
       <RouterLink v-if="privileges.can_view_staff" :to="{ name: 'Administration' }" class="dashNav">
         <IconAdmin class="" />
@@ -212,6 +294,9 @@ const showMore = ref(false)
       >
         <IconBox class="" />
       </RouterLink>
+      <RouterLink v-if="privileges.can_manage_expenses" :to="{ name: 'Expenses' }" class="dashNav w-[60px]">
+        <IconExpenses class="" />
+      </RouterLink>
       <RouterLink
         v-if="privileges.can_view_staff"
         :to="{ name: 'Administration' }"
@@ -254,7 +339,7 @@ const showMore = ref(false)
 
     <!-- MAIN (first 5 icons ONLY) -->
     <div class="flex justify-between px-4 py-3">
-      <RouterLink
+      <!-- <RouterLink
         v-if="privileges.can_view_analytics"
         :to="{ name: 'overview' }"
         class="dashNav w-[56px]"
@@ -292,14 +377,19 @@ const showMore = ref(false)
         class="dashNav w-[56px]"
       >
         <IconBox />
-      </RouterLink>
+      </RouterLink> -->
 
-      <!-- 3 DOT BUTTON -->
-      <button
-        v-if="privileges.can_view_staff || privileges.view_other_staff_activities"
-        @click="showMore = !showMore"
+      <RouterLink
+        v-for="item in mainNavItems"
+        :key="item.name"
+        :to="{ name: item.name }"
         class="dashNav w-[56px]"
       >
+        <component :is="item.icon" />
+      </RouterLink>
+
+      <!-- 3 DOT BUTTON if needed-->
+      <button v-if="moreNavItems.length" @click="showMore = !showMore" class="dashNav w-[56px]">
         <Icon3dot />
       </button>
     </div>
@@ -310,6 +400,16 @@ const showMore = ref(false)
       class="absolute bottom-16 right-4 bg-white rounded-xl shadow-lg p-3 space-y-2"
     >
       <RouterLink
+        v-for="item in moreNavItems"
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="dashNav"
+        @click="showMore = false"
+      >
+        <component :is="item.icon" class="w-5 h-5" />
+        <span class="text-sm">{{ item.label }}</span>
+      </RouterLink>
+      <!-- <RouterLink
         v-if="privileges.can_view_staff"
         :to="{ name: 'Administration' }"
         class="dashNav"
@@ -337,7 +437,7 @@ const showMore = ref(false)
       <RouterLink :to="{ name: 'Profile' }" class="dashNav" @click="showMore = false">
         <IconProfile class="w-5 h-5" />
         <span class="text-sm">Profile</span>
-      </RouterLink>
+      </RouterLink> -->
       <a
         href="https://www.gesoftech.com/"
         target="_blank"

@@ -206,9 +206,23 @@ const router = createRouter({
             if (privileges.view_other_staff_activities) {
               next()
             } else {
-              next({ name: 'Settings' })
+              next({ name: 'Expenses' })
             }
           },
+        },
+        {
+          path: 'expenses',
+          name: 'Expenses',
+          component: () => import('../components/ViewExpenses.vue'),
+          beforeEnter: async (to, from, next) => {
+            const { privileges } = useUserStore()
+
+            if (privileges.can_manage_expenses) {
+              next()
+            } else {
+              next({ name: 'Settings' })
+            }
+          }
         },
         {
           path: 'settings',

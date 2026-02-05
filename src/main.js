@@ -177,7 +177,8 @@ const processSyncQueue = async () => {
         'ADD_CUSTOMER': { table: 'customers', storeKey: 'customers', matchField: 'phone' },
         'EDIT_CUSTOMER': { table: 'customers', storeKey: 'customers', matchField: 'id' },
         'ADD_PRODUCT': { table: 'products', storeKey: 'products', matchField: 'sku' },
-        'MAKE_SALE': { table: 'sales', storeKey: 'sales', matchField: 'invoice_number' }
+        'MAKE_SALE': { table: 'sales', storeKey: 'sales', matchField: 'invoice_number' },
+        'ADD_EXPENSE': { table: 'expenseTable', storeKey: 'expenses', matchField: 'title' },
       };
 
       const mapping = typeMap[task.type];

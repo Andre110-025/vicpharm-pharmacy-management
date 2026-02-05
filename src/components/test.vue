@@ -1,4 +1,83 @@
 <script>
+
+import { computed } from 'vue'
+
+const navItems = computed(() => [
+  {
+    name: 'overview',
+    label: 'Dashboard',
+    icon: IconDashboard,
+    show: privileges.value.can_view_analytics,
+  },
+  {
+    name: 'Customers',
+    label: 'Customers',
+    icon: IconCustomers,
+    show: privileges.value.can_view_customers,
+  },
+  {
+    name: 'Income',
+    label: 'Income',
+    icon: IconIncome,
+    show: privileges.value.can_view_income_records,
+  },
+  {
+    name: 'Sales',
+    label: 'Sales',
+    icon: IconSale,
+    show: privileges.value.can_view_sales_records,
+  },
+  {
+    name: 'Inventory',
+    label: 'Inventory',
+    icon: IconBox,
+    show: privileges.value.can_view_products,
+  },
+  {
+    name: 'Administration',
+    label: 'Administration',
+    icon: IconAdmin,
+    show: privileges.value.can_view_staff,
+  },
+  {
+    name: 'ActivityLog',
+    label: 'Activity Log',
+    icon: IconActivityLog,
+    show: privileges.value.view_other_staff_activities,
+  },
+  {
+    name: 'Settings',
+    label: 'Settings',
+    icon: IconSettings,
+    show: true,
+  },
+  {
+    name: 'Profile',
+    label: 'Profile',
+    icon: IconProfile,
+    show: true,
+  },
+])
+
+
+
+
+const visibleNavItems = computed(() =>
+  navItems.value.filter(item => item.show)
+)
+
+const ULTRA_LIMIT = 5
+
+const mainNavItems = computed(() =>
+  visibleNavItems.value.slice(0, ULTRA_LIMIT)
+)
+
+const moreNavItems = computed(() =>
+  visibleNavItems.value.slice(ULTRA_LIMIT)
+)
+
+
+
   function calculateExpiry(months) {
   const now = new Date()
   const expiry = new Date(now)
@@ -395,23 +474,57 @@ const getTopCustomerList = async (page = 1) => {
   } catch (error) { ... }
 }
 <template>
-  <div v-if="showSplash" class="splash-screen">
-    <img src="/your-gif.gif" alt="Loading" />
-  </div>
-  
-  <div v-else>
-    <RouterView />
+<!-- Wrapper -->
+<div class="space-y-5">
+
+  <!-- ================= TOP ANALYTICS ================= -->
+  <div class="grid grid-cols-6 gap-4">
+
+    <div class="col-span-3 bg-white p-4 rounded-xl shadow">
+      Sales Overview
+    </div>
+
+    <div class="col-span-2 bg-white p-4 rounded-xl shadow">
+      Inventory Summary
+    </div>
+
+    <div class="col-span-1 bg-white p-4 rounded-xl shadow">
+      Expenses
+    </div>
+
   </div>
 
-  <a
-  class="flex flex-row gap-2 rounded-md px-5 py-2.5 text-sm border-gray-400 text-black transition secondaryBtn justify-center items-center"
-  :class="!navigator.onLine ? 'opacity-50 cursor-not-allowed bg-gray-200' : 'hover:bg-gray-100'"
-  ref="sales-list"
-  :type="navigator.onLine ? 'button' : ''"
-  @click="!navigator.onLine ? alert('Exporting requires an internet connection') : null"
->
-  <IconExport class="h-4 w-4" />
-  <p class="h-fit max-md:hidden p-0 m-0">Export</p>
-</a>
+
+  <!-- ================= MAIN DASHBOARD ================= -->
+  <div class="grid grid-cols-5 gap-4">
+
+    <div class="col-span-3 bg-white p-4 rounded-xl shadow">
+      Top Selling
+    </div>
+
+    <div class="col-span-2 bg-white p-4 rounded-xl shadow">
+      Stock by Brand
+    </div>
+
+    <div class="col-span-3 bg-white p-4 rounded-xl shadow">
+      Revenue Chart
+    </div>
+
+    <div class="col-span-2 bg-white p-4 rounded-xl shadow">
+      Low Stock
+    </div>
+
+    <div class="col-span-3 bg-white p-4 rounded-xl shadow">
+      Top Customers
+    </div>
+
+    <div class="col-span-2 bg-white p-4 rounded-xl shadow">
+      Slowest Selling
+    </div>
+
+  </div>
+
+</div>
+
 
 </template>

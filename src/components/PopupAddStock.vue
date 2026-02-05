@@ -73,9 +73,9 @@ const rules = computed(() => ({
   purchased_date: {
     required,
   },
-  expiry_date: {
-    required,
-  },
+  // expiry_date: {
+  //   required,
+  // },
   purchased_unit_qty: {
     required,
   },
@@ -98,6 +98,12 @@ const rules = computed(() => ({
 
 const v$ = useVuelidate(rules, productData)
 
+const getFutureExpiryDate = () => {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() + 100)
+  return date.toISOString().split('T')[0] // YYYY-MM-DD
+}
+
 const addNewStock = async () => {
   productData.saleInfo.skuSale[0].unit_cost_price = productData.unit_cost_price
   productData.saleInfo.skuSale[0].whole_sale_amount = productData.whole_sale_amount
@@ -111,7 +117,11 @@ const addNewStock = async () => {
     isLoading.value = true
     // console.log('after validation', productData)
 
-    const response = await axios.post('addnewstock', productData)
+    const payload = JSON.parse(JSON.stringify(productData))
+
+    payload.expiry_date = payload.expiry_date || getFutureExpiryDate()
+
+    const response = await axios.post('addnewstock', payload)
     console.log(response, response.status)
 
     if (response.status === 201) {
@@ -139,6 +149,22 @@ const addNewStock = async () => {
     isLoading.value = false
   }
 }
+
+const profitPercentage = ref(null)
+const wholesaleManuallyEdited = ref(false)
+
+watch([() => productData.unit_cost_price, () => profitPercentage.value], ([cost, percent]) => {
+  if (cost == null || percent == null) return
+
+  const sellingPrice = Math.round(cost + cost * (percent / 100))
+
+  productData.unit_amount = sellingPrice
+  console.log('selling price:', sellingPrice)
+
+  if (!wholesaleManuallyEdited.value) {
+    productData.whole_sale_amount = sellingPrice
+  }
+})
 </script>
 
 <template>
@@ -174,13 +200,26 @@ const addNewStock = async () => {
 
       <div class="flex flex-col flex-1 overflow-y-auto p-4">
         <!-- Add your form or content here -->
-        <DynamicInput
-          v-model="productData.purchased_total_amount"
-          type="Number"
-          placeholder="Purchased Total Amount (₦)"
-          :label="'Purchased Total Amount (₦)'"
-          :currency="true"
-        />
+        <div class="flex flex-row gap-3">
+          <DynamicInput
+            v-model="productData.purchased_total_amount"
+            type="Number"
+            placeholder="Purchased Total Amount (₦)"
+            :label="'Purchased Amount (₦)'"
+            :currency="true"
+            class="w-[170px]"
+          />
+          <DynamicInput
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            v-model="profitPercentage"
+            :label="'Percentage (Optional)'"
+            placeholder="Enter Percentage"
+            class="w-[170px]"
+          />
+        </div>
 
         <div>
           <span class="block mb-2 text-base">Total Unit Purchased</span>
@@ -216,7 +255,6 @@ const addNewStock = async () => {
             placeholder="Retail Price (₦)"
             class="flex-1"
             :label="'Retail Price (₦)'"
-            :currency="true"
           />
 
           <DynamicInput
@@ -225,7 +263,6 @@ const addNewStock = async () => {
             placeholder="Wholesale Price (₦)"
             class="flex-1"
             :label="'Wholesale Price (₦)'"
-            :currency="true"
           />
         </div>
 
@@ -243,7 +280,7 @@ const addNewStock = async () => {
             type="Date"
             placeholder="Expiry Date"
             class="flex-1"
-            :label="'Expiry Date'"
+            :label="'Expiry Date (optional)'"
           />
         </div>
       </div>

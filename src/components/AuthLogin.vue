@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import DynamicInput from './DynamicInput.vue'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email } from '@vuelidate/validators'
@@ -7,6 +7,17 @@ import axios from 'axios'
 import { toast } from 'vue3-toastify'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useChatbot } from '@/composables/useChatbot'
+
+const { mount, unmount } = useChatbot()
+
+onMounted(() => {
+  mount()
+})
+
+onBeforeUnmount(() => {
+  unmount()
+})
 
 const userStore = useUserStore()
 

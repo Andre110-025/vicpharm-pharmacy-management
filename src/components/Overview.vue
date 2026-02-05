@@ -15,13 +15,16 @@ import IconDesktop from './IconDesktop.vue'
 import IconAndroid from './IconAndroid.vue'
 import IconDownloadBtn from './IconDownloadBtn.vue'
 import { db } from '@/db'
+import Logo from '@/components/Logo.vue'
 
 const { canInstall, installApp, isInstalled } = usePWAInstall()
-const isMobile = ref(window.innerWidth < 450)
+const isMobile = ref(window.innerWidth < 768)
+const isMobileOS = ref(window.innerWidth < 640)
 
 // Unified resize handler
 const handleResize = () => {
-  isMobile.value = window.innerWidth < 450
+  isMobile.value = window.innerWidth < 768
+  isMobileOS.value = window.innerWidth < 640
 }
 
 const showDownloadBtn = ref(false)
@@ -92,6 +95,7 @@ const applyDataToState = (data) => {
   metrics.profit = data.profit
   metrics.inStock = data.inventory_summary?.total_in_stock || 0
   metrics.stockValue = data.inventory_summary?.value_of_stock || 0
+  metrics.expense = data.expenses
   topCustomers.value = data.customer_spent || []
   topSelling.value = data.top_sold_products || []
   slowestSelling.value = data.least_sold_products || []
@@ -114,7 +118,7 @@ const getMetrics = async () => {
       isLoading.value = false // Stop loader so user sees old data while we fetch fresh
     }
   } catch (e) {
-    console.warn("No dashboard cache found yet")
+    console.warn('No dashboard cache found yet')
   }
 
   // FETCH FRESH DATA
@@ -124,11 +128,11 @@ const getMetrics = async () => {
     if (response.status == 201) {
       const data = response.data
       applyDataToState(data)
-      
+
       // Save fresh data back to cache
       await db.dashboard_cache.put({ id: 'current', data: data })
       console.log('Dashboard cache updated!')
-      
+
       isLoading.value = false
     }
   } catch (error) {
@@ -230,6 +234,10 @@ const formatShortNumber = (num) => {
             <span class="inline min-[450px]:hidden">Install</span>
           </button>
         </div>
+
+        <div v-else>
+          <Logo :class="isMobile ? 'w-20' : 'w-40'" />
+        </div>
       </div>
     </div>
 
@@ -238,7 +246,7 @@ const formatShortNumber = (num) => {
 
   <!-- Main loading indicator for entire dashboard -->
 
-  <div class="grid grid-cols-5 gap-4 py-5 max-sm:flex max-sm:flex-col">
+  <div class="grid grid-cols-6 gap-4 py-5 max-sm:flex max-sm:flex-col">
     <!-- Sales Summary -->
     <div class="col-span-3 bg-white p-4 rounded-xl shadow">
       <h5>Sales Overview</h5>
@@ -278,7 +286,7 @@ const formatShortNumber = (num) => {
     </div>
 
     <!-- Inventory Summary -->
-    <div class="col-span-2 bg-white p-4 rounded-xl shadow">
+    <div v-if="!isMobileOS" class="col-span-2 bg-white p-4 rounded-xl shadow">
       <h5>Inventory Summary</h5>
       <div v-if="isLoading" class="h-24 flex justify-center items-center">
         <div
@@ -303,7 +311,79 @@ const formatShortNumber = (num) => {
       </div>
     </div>
 
-    <!-- Top Selling Stock -->
+    <div v-if="!isMobileOS" class="col-span-1 bg-white p-4 rounded-xl shadow">
+      <h5>Expenses</h5>
+      <div v-if="isLoading" class="h-24 flex justify-center items-center">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-2 border-mainColor border-t-transparent"
+        ></div>
+      </div>
+      <div v-else class="flex gap-4 mt-5">
+        <div class="flex-1">
+          <p>Total Expense</p>
+          <h4 class="text-mainColor">
+            {{
+              isMobile
+                ? formatShortNumber(metrics.expense)
+                : formatCurrency(metrics.expense, 2, false)
+            }}
+          </h4>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isMobileOS" class="flex flex-wrap gap-4">
+      <!-- Inventory Summary -->
+      <div class="bg-white p-4 rounded-xl shadow flex-1 min-w-[45%]">
+        <h5>Inventory Summary</h5>
+        <div v-if="isLoading" class="h-24 flex justify-center items-center">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-2 border-mainColor border-t-transparent"
+          ></div>
+        </div>
+        <div v-else class="flex gap-4 mt-5">
+          <div>
+            <p>In Stock</p>
+            <h4 class="text-mainColor">{{ metrics.inStock.toLocaleString() }}</h4>
+          </div>
+          <div class="flex-1">
+            <p>Stock Value</p>
+            <h4 class="text-mainColor">
+              {{
+                isMobile
+                  ? formatShortNumber(metrics.stockValue)
+                  : formatCurrency(metrics.stockValue, 2, false)
+              }}
+            </h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses -->
+      <div class="bg-white p-4 rounded-xl shadow flex-1 min-w-[45%]">
+        <h5>Expenses</h5>
+        <div v-if="isLoading" class="h-24 flex justify-center items-center">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-2 border-mainColor border-t-transparent"
+          ></div>
+        </div>
+        <div v-else class="flex gap-4 mt-5">
+          <div class="flex-1">
+            <p>Total Expense</p>
+            <h4 class="text-mainColor">
+              {{
+                isMobile
+                  ? formatShortNumber(metrics.expense)
+                  : formatCurrency(metrics.expense, 2, false)
+              }}
+            </h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Top Selling Stock -->
+  <div class="grid grid-cols-5 gap-4 pb-5 max-sm:flex max-sm:flex-col">
     <div class="col-span-3 bg-white p-4 rounded-xl shadow">
       <div class="flex justify-between items-center mb-4">
         <h5>Top Selling Stock</h5>
@@ -374,10 +454,10 @@ const formatShortNumber = (num) => {
     </div>
 
     <!-- Revenue and Profit -->
-    <div class="col-span-3 flex flex-col bg-white p-4 rounded-xl shadow">
+    <div class="col-span-3 flex flex-col bg-white p-4 rounded-xl shadow min-h-[360px]">
       <!-- Revenue chart with loading state would go here -->
       <h5>Revenue and Profit</h5>
-      <div class="h-32 flex justify-center items-center flex-1">
+      <div class="flex justify-center items-center flex-1">
         <div
           v-if="isLoading"
           class="animate-spin rounded-full h-8 w-8 border-2 border-mainColor border-t-transparent"

@@ -164,9 +164,9 @@ const rules = computed(() => ({
   purchased_date: {
     required,
   },
-  expiry_date: {
-    required,
-  },
+  // expiry_date: {
+  //   required,
+  // },
   purchased_unit_qty: {
     required,
   },
@@ -251,6 +251,12 @@ watch(selectedCategory, (newCategory) => {
   }
 })
 
+const getFutureExpiryDate = () => {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() + 100)
+  return date.toISOString().split('T')[0] // YYYY-MM-DD
+}
+
 const addNewProduct = async () => {
   productData.product_type = productData.category
   productData.sale_unit_type = productData.purchase_unit_type
@@ -268,6 +274,9 @@ const addNewProduct = async () => {
 
       // Create a clean, non-reactive object for Dexie
       const cleanProductData = JSON.parse(JSON.stringify(productData))
+
+      cleanProductData.expiry_date = cleanProductData.expiry_date || getFutureExpiryDate()
+
       const tempId = props.edit ? productData.id : `temp-prod-${Date.now()}`
 
       // A. Add to Sync Queue
@@ -312,7 +321,7 @@ const addNewProduct = async () => {
           {
             id: productData.sku_id || `temp-sku-${Date.now()}`,
             purchase_unit_type: productData.purchase_unit_type,
-            expiry_date: productData.expiry_date, // Ensure this is here for the formatter
+            expiry_date: productData.expiry_date || null, // Ensure this is here for the formatter
             productbranch: [
               {
                 qty_remaining_by_lowest: Number(productData.purchased_unit_qty),
@@ -339,7 +348,11 @@ const addNewProduct = async () => {
       return
     }
 
-    const { data, status } = await axios.post('addproduct', productData)
+    const payload = JSON.parse(JSON.stringify(productData))
+
+    payload.expiry_date = payload.expiry_date || getFutureExpiryDate()
+
+    const { data, status } = await axios.post('addproduct', payload)
     // console.log(status, data)
 
     if (status === 201 && !data.errors && data.Product !== 'null') {
@@ -377,6 +390,22 @@ const addNewProduct = async () => {
     isLoading.value = false
   }
 }
+
+const profitPercentage = ref(null)
+const wholesaleManuallyEdited = ref(false)
+
+watch([() => productData.unit_cost_price, () => profitPercentage.value], ([cost, percent]) => {
+  if (cost == null || percent == null) return
+
+  const sellingPrice = Math.round(cost + cost * (percent / 100))
+
+  productData.unit_amount = sellingPrice
+  console.log('selling price:', sellingPrice)
+
+  if (!wholesaleManuallyEdited.value) {
+    productData.whole_sale_amount = sellingPrice
+  }
+})
 
 // const addNewProduct = async () => {
 //   productData.product_type = productData.category
@@ -691,13 +720,26 @@ onMounted(() => {
           </button>
         </div>
 
-        <DynamicInput
-          v-model="productData.purchase_unit_type"
-          type="text"
-          placeholder="Enter Purchase Unit Type"
-          :label="'Enter Purchase Unit Type'"
-          v-if="!props.edit"
-        />
+        <div class="flex flex-row gap-3">
+          <DynamicInput
+            v-model="productData.purchase_unit_type"
+            type="text"
+            placeholder="Enter Purchase Unit Type"
+            :label="'Purchase Unit Type'"
+            v-if="!props.edit"
+            class="w-[170px]"
+          />
+          <DynamicInput
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            v-model="profitPercentage"
+            :label="'Percentage (Optional)'"
+            placeholder="Enter Percentage"
+            class="w-[170px]"
+          />
+        </div>
 
         <div v-if="!props.edit" class="flex flex-row gap-2.5">
           <DynamicInput
@@ -706,16 +748,15 @@ onMounted(() => {
             placeholder="Retail Price"
             class="flex-1"
             :label="'Retail Price'"
-            :currency="true"
           />
 
           <DynamicInput
             v-model="productData.whole_sale_amount"
+            @input="wholesaleManuallyEdited = true"
             type="Number"
             placeholder="Wholesale Price"
             class="flex-1"
             :label="'Wholesale Price'"
-            :currency="true"
           />
         </div>
 
@@ -733,7 +774,7 @@ onMounted(() => {
             type="Date"
             placeholder="Expiry Date"
             class="flex-1"
-            :label="'Expiry Date'"
+            :label="'Expiry Date (optional)'"
           />
         </div>
 

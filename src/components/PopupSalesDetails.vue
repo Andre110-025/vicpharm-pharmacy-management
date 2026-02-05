@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, useTemplateRef, watchEffect } from 'vue'
+import { ref, onMounted, useTemplateRef, watchEffect, onUnmounted } from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 import { useModal } from 'vue-final-modal'
 import PopupReturnSale from './PopupReturnSale.vue'
@@ -26,6 +26,8 @@ const props = defineProps({
 
 const anchorLink = useTemplateRef('new-product-file')
 const downloadLink = ref(null)
+const pdfBlob = ref(null)
+const pdfUrl = ref(null)
 
 const emits = defineEmits(['confirm'])
 
@@ -47,27 +49,114 @@ const handleReturnItem = (item) => {
   open()
 }
 
+// const getPdf = async () => {
+//   try {
+//     const { data } = await axios.get(
+//       `downloadinvoice/${props.sales.order_code}/${user.userType}/print`,
+//       {
+//         responseType: 'blob',
+//       },
+//     )
+
+//     // Create a blob from the Excel data
+//     const blob = new Blob([data], {
+//       type: 'application/pdf',
+//     })
+
+//     // Create a URL for the blob
+//     const url = window.URL.createObjectURL(blob)
+
+//     // Set the download link
+//     downloadLink.value = url
+//   } catch (error) {
+//     console.error('Error getting file:', error)
+//   }
+// }
+
 const getPdf = async () => {
   try {
     const { data } = await axios.get(
       `downloadinvoice/${props.sales.order_code}/${user.userType}/print`,
-      {
-        responseType: 'blob',
-      },
+      { responseType: 'blob' },
     )
 
-    // Create a blob from the Excel data
-    const blob = new Blob([data], {
+    pdfBlob.value = new Blob([data], { type: 'application/pdf' })
+    pdfUrl.value = URL.createObjectURL(pdfBlob.value)
+
+    downloadLink.value = pdfUrl.value
+  } catch (error) {
+    console.error('Error getting PDF:', error)
+  }
+}
+
+const printPdf = () => {
+  if (!pdfUrl.value) return
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  console.log(isMobile)
+
+  if (isMobile) {
+    // Mobile-safe: open PDF
+    window.open(pdfUrl.value, '_blank')
+    return
+  }
+
+  // Desktop print
+  const iframe = document.createElement('iframe')
+  iframe.style.position = 'fixed'
+  iframe.style.right = '0'
+  iframe.style.bottom = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+  iframe.src = pdfUrl.value
+
+  document.body.appendChild(iframe)
+
+  iframe.onload = () => {
+    iframe.contentWindow.focus()
+    iframe.contentWindow.print()
+  }
+}
+
+const isMobile = ref(window.innerWidth < 450)
+
+const handleResize = () => {
+  isMobile.value = window.innerWidth < 450
+}
+
+onMounted(() => {
+  handleResize()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
+
+const sharePdf = async () => {
+  if (!pdfBlob.value) return
+
+  try {
+    const file = new File([pdfBlob.value], `Receipt_${props.sales.order_code}.pdf`, {
       type: 'application/pdf',
     })
 
-    // Create a URL for the blob
-    const url = window.URL.createObjectURL(blob)
-
-    // Set the download link
-    downloadLink.value = url
+    // Check if the browser is ready to share
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'Sales Receipt',
+        text: `Receipt for Order ${props.sales.order_code}`,
+        files: [file],
+      })
+    } else {
+      // Fallback: Open in new tab
+      window.open(pdfUrl.value, '_blank')
+    }
   } catch (error) {
-    console.error('Error getting file:', error)
+    if (error.name !== 'AbortError') {
+      console.error('Share failed:', error)
+    }
   }
 }
 
@@ -344,14 +433,31 @@ onMounted(() => {
             </div>
           </div>
 
-          <div>
+          <div class="flex gap-3 mt-8 max-[450px]:mt-4">
             <a
-              class="mt-8 w-full block text-center rounded-md px-5 py-2.5 text-sm mainBtn transition duration-300 max-[450px]:mt-4 max-[450px]:px-4 max-[450px]:py-2 max-[450px]:text-xs"
               ref="new-product-file"
+              class="flex-1 text-center rounded-md px-5 py-2.5 text-sm mainBtn transition duration-300 max-[450px]:px-4 max-[450px]:py-[12px] max-[450px]:text-xs max-[450px]:leading-4"
+            >
+              Download Receipt
+            </a>
+
+            <button
+              v-if="!isMobile"
+              @click="printPdf"
+              class="flex-1 text-center rounded-md px-5 py-2.5 text-sm mainBtn transition duration-300 max-[450px]:px-4 max-[450px]:py-2 max-[450px]:text-xs"
               type="button"
             >
-              Print Receipt
-            </a>
+              {{ isMobile ? 'Open Receipt' : 'Print Receipt' }}
+            </button>
+            <button
+              v-if="isMobile"
+              :disabled="!pdfBlob"
+              @click="sharePdf"
+              class="flex-1 text-center border rounded-md px-5 py-2.5 text-sm bg-white transition duration-300 disabled:bg-gray-400"
+              type="button"
+            >
+              Share Receipt
+            </button>
           </div>
         </div>
       </div>

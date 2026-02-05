@@ -1,7 +1,19 @@
 <script setup>
+import { onMounted, onBeforeUnmount } from 'vue'
 import IconEmail from './IconEmail.vue'
 import IconImage from './IconImage.vue'
 import { useUserStore } from '@/stores/user'
+import { useChatbot } from '@/composables/useChatbot'
+
+const { mount, unmount } = useChatbot()
+
+onMounted(() => {
+  mount()
+})
+
+onBeforeUnmount(() => {
+  unmount()
+})
 
 const { user } = useUserStore()
 </script>

@@ -1,25 +1,83 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount, onUnmounted, } from 'vue'
 import IconLogout from './IconLogout.vue'
 import IconNotification from './IconNotification.vue'
 import IconPasswordLock from './IconPasswordLock.vue'
 import IconButtonNotification from './IconButtonNotification.vue'
 import SettingPasswordChange from './SettingPasswordChange.vue'
 import { useUserStore } from '@/stores/user'
+import { useChatbot } from '@/composables/useChatbot'
+import Logo from '@/components/Logo.vue'
+import IconDownloadBtn from './IconDownloadBtn.vue'
+import { usePWAInstall } from '@/composables/usePWAInstall'
+
+const { mount, unmount } = useChatbot()
+
+onMounted(() => {
+  mount()
+})
+
+onBeforeUnmount(() => {
+  unmount()
+})
 
 const { logOut } = useUserStore()
-
+const { canInstall, installApp, isInstalled } = usePWAInstall()
 const activeSetting = ref('setting1')
+
+const isMobile = ref(window.innerWidth < 450)
+
+const handleResize = () => {
+  isMobile.value = window.innerWidth < 450
+}
+
+const checkIfInstalled = () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  // ...
+  isInstalled.value = isStandalone || isStandaloneIOS
+}
+
+onMounted(() => {
+  handleResize()
+
+  window.addEventListener('resize', handleResize)
+})
+
+// Clean up listener
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <template>
   <div class="settings-wrapper">
-    <header class="mb-6 md:mb-8">
-      <div>
-        <h2 class="text-gray-900 text-xl md:text-2xl font-semibold">Settings</h2>
-        <p class="mt-1 md:mt-2.5 text-sm md:text-base text-gray-600">Configure your dashboard</p>
+    <div class="flex flex-row justify-between items-center">
+      <header class="mb-6 md:mb-8">
+        <div>
+          <h2 class="text-gray-900 text-xl md:text-2xl font-semibold">Settings</h2>
+          <p class="mt-1 md:mt-2.5 text-sm md:text-base text-gray-600">Configure your dashboard</p>
+        </div>
+      </header>
+
+      <div class="-mt-[30px]">
+        <div v-if="!isInstalled">
+          <button
+            v-if="canInstall"
+            @click="installApp"
+            class="rounded-xl bg-mainColor text-white font-semibold shadow-lg flex flex-row items-center gap-2 py-2 min-[450px]:py-3"
+            title="Install the App"
+          >
+            <IconDownloadBtn />
+            <span class="hidden min-[450px]:inline">Install App</span>
+            <span class="inline min-[450px]:hidden">Install</span>
+          </button>
+        </div>
+
+        <div v-else>
+          <Logo :class="isMobile ? 'w-20' : 'w-40'" />
+        </div>
       </div>
-    </header>
+    </div>
 
     <!-- Mobile Navigation Tabs -->
     <div class="md:hidden mb-4 overflow-x-auto scrollbar-hide">

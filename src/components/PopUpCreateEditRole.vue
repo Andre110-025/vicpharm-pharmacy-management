@@ -69,6 +69,7 @@ const roleData = reactive({
     : false,
   can_view_staff: props.edit ? props.customRoleData.rolepreviledges.can_view_staff : false,
   can_create_role: props.edit ? props.customRoleData.rolepreviledges.can_create_role : false,
+  can_manage_expenses: props.edit ? props.customRoleData.rolepreviledges.can_manage_expenses: false
 })
 
 const permissionGroups = {
@@ -101,6 +102,9 @@ const permissionGroups = {
     { key: 'add_delete_staff', label: 'Add/Delete Staff' },
     { key: 'change_staff_position', label: 'Change Staff Position' },
     { key: 'view_other_staff_activities', label: 'View Staff Activities' },
+  ],
+  expense: [
+    { key: 'can_manage_expenses', label: 'View Expenses' },
   ],
 }
 
@@ -217,6 +221,17 @@ const editAdminRole = async () => {
           <h3 class="text-lg font-medium mb-2 text-gray-700 border-b pb-1">Staff Management</h3>
           <CheckboxInput
             v-for="perm in permissionGroups.staff"
+            :key="perm.key"
+            :label="perm.label"
+            v-model="roleData[perm.key]"
+          />
+        </div>
+
+         <!-- Expenses -->
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-2 text-gray-700 border-b pb-1">Expenses</h3>
+          <CheckboxInput
+            v-for="perm in permissionGroups.expense"
             :key="perm.key"
             :label="perm.label"
             v-model="roleData[perm.key]"

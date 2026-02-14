@@ -26,6 +26,7 @@ const props = defineProps({
       change_staff_position: false,
       can_view_staff: false,
       can_create_role: false,
+      can_manage_expenses: false,
     }),
   },
 })
@@ -69,6 +70,9 @@ const permissionCategories = {
   Customer: {
     can_view_customers: 'View customer records',
     can_add_edit_customers: 'Add or edit customers',
+  },
+  Expenses: {
+    can_manage_expenses: 'View Expenses',
   },
 }
 
@@ -154,6 +158,17 @@ const showDetailedView = ref(true)
           >
             <span v-if="isActive('can_view_income_records')" class="mr-1.5">✓</span>
             User can view income
+          </p>
+        </div>
+
+        <div>
+          <p class="font-medium text-gray-800 mb-1">Expenses</p>
+          <p
+            :class="isActive('can_manage_expenses') ? 'text-blue-600' : 'text-gray-400'"
+            class="flex items-center text-sm"
+          >
+            <span v-if="isActive('can_manage_expenses')" class="mr-1.5">✓</span>
+            User can view expense
           </p>
         </div>
       </div>
